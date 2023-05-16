@@ -19,6 +19,7 @@ class Uart{
         void sendCommand(uint32_t command);
         char readChar();
         void readString(char*, int, char); 
+        bool available();
     private:
 
 };

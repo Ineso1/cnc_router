@@ -97,7 +97,6 @@ void Uart::readString(char* buffer, int bufferSize, char termination) {
     int i = 0;
     char c;
     
-    // Read characters until termination character is encountered or maximum length is reached
     while (i < bufferSize - 1) {
         c = readChar();
         
@@ -111,3 +110,8 @@ void Uart::readString(char* buffer, int bufferSize, char termination) {
     
     buffer[i] = '\0';  // Null-terminate the string
 }
+
+bool Uart::available() {
+    return (UART0->S1 & UART_S1_RDRF_MASK);
+}
+
