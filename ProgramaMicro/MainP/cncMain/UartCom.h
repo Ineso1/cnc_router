@@ -1,5 +1,5 @@
-#ifndef UARTCOM_H
-#define UARTCOM_H
+#ifndef SERIALCOM_H
+#define SERIALCOM_H
 #include <stdint.h>
 #include <MKL25Z4.h>
 
@@ -13,4 +13,4 @@ void UART0_SendString(const char* str);
 void UART0_IntToHex(uint32_t value, char* buffer, int bufferSize);
 void UART0_IntToBinary(uint32_t value, char* buffer, int bufferSize);
 void UART0_SendCommand(uint32_t command);
-#endif  // UARTCOM_H
+#endif  // SERIALCOM_H

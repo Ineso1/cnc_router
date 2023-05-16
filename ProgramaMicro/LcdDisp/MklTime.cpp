@@ -1,7 +1,4 @@
-// #include "mbed.h"
-#include <MKL25Z4.h>
-#include "UartCom.h"
-
+#include "MklTime.h"
 
 void delay_ms(int n) {
     int i;
@@ -15,14 +12,3 @@ void delay_ms(int n) {
     SysTick->CTRL = 0;
     /* Stop the timer (Enable = 0) */
 }
-
-// main() runs in its own thread in the OS
-int main()
-{
-    UART0_Init();
-    while (true) {
-    UART0_SendString("jalese compa\n");
-    delay_ms(1000);
-    }
-}
-
