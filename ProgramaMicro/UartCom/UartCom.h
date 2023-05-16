@@ -17,6 +17,8 @@ class Uart{
         void intToHex(uint32_t value, char* buffer, int bufferSize);
         void intToBinary(uint32_t value, char* buffer, int bufferSize);
         void sendCommand(uint32_t command);
+        char readChar();
+        void readString(char*, int, char); 
     private:
 
 };

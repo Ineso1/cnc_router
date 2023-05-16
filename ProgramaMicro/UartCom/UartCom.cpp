@@ -84,3 +84,30 @@ void Uart::sendCommand(uint32_t command) {
     // Send the command string
     sendString(hexCommand);
 }
+
+char Uart::readChar() {
+    // Wait until receive data register is full
+    while (!(UART0->S1 & UART_S1_RDRF_MASK));
+    
+    // Read and return the received character
+    return UART0->D;
+}
+
+void Uart::readString(char* buffer, int bufferSize, char termination) {
+    int i = 0;
+    char c;
+    
+    // Read characters until termination character is encountered or maximum length is reached
+    while (i < bufferSize - 1) {
+        c = readChar();
+        
+        if (c == termination) {
+            break;
+        }
+        
+        buffer[i] = c;
+        i++;
+    }
+    
+    buffer[i] = '\0';  // Null-terminate the string
+}

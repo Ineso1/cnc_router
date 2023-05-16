@@ -12,10 +12,15 @@ int main()
     Serial.init();
     Lcd.lcdInit();
 
+    char receivedString[50];
+
     while (true) {
     Lcd.lcdClear();
-    Serial.sendString("Jalese compa\n");
-    Lcd.lcdPrint("Jalese compa");
+    // Serial.sendString("Jalese compa\n");
+    // Lcd.lcdPrint("Jalese compa");
+    Serial.readString(receivedString, sizeof(receivedString), '\n');
+    Lcd.lcdPrint(receivedString);
+    Lcd.lcdPrint(receivedString);
     delay_ms(1000);
     }
 }
