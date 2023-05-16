@@ -10,7 +10,7 @@ class Uart{
     #define UART0_OVERSAMPLING_RATIO 16
 
     public:
-        Uart()
+        Uart();
         void init();
         void sendChar(char c);
         void sendString(const char* str);

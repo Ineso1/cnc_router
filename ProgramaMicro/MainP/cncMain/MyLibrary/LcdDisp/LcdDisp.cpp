@@ -1,8 +1,6 @@
 #include "LcdDisp.h"
 
 
-void LcdDisp::LcdDisp(){};
-
 void LcdDisp::pulseEnable() {
     PTC->PDOR |= EN_PIN;
     delay_ms(5);

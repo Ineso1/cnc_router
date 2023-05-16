@@ -1,6 +1,8 @@
 #include "UartCom.h"
 
-void UART0_Init() {
+Uart::Uart(){}
+
+void Uart::init() {
     // Enable clock to UART0 module
     SIM->SCGC4 |= SIM_SCGC4_UART0_MASK;
     
@@ -22,7 +24,7 @@ void UART0_Init() {
     UART0->C2 |= UART_C2_TE_MASK | UART_C2_RE_MASK;
 }
 
-void UART0_SendChar(char c) {
+void Uart::sendChar(char c) {
     // Wait until transmit data register is empty
     while (!(UART0->S1 & UART_S1_TDRE_MASK));
     
@@ -30,14 +32,14 @@ void UART0_SendChar(char c) {
     UART0->D = c;
 }
 
-void UART0_SendString(const char* str) {
+void Uart::sendString(const char* str) {
     while (*str) {
-        UART0_SendChar(*str);
+        sendChar(*str);
         str++;
     }
 }
 
-void UART0_IntToHex(uint32_t value, char* buffer, int bufferSize) {
+void Uart::intToHex(uint32_t value, char* buffer, int bufferSize) {
     const char hexChars[] = "0123456789ABCDEF";
     int i = bufferSize - 1;
     
@@ -56,7 +58,7 @@ void UART0_IntToHex(uint32_t value, char* buffer, int bufferSize) {
     }
 }
 
-void UART0_IntToBinary(uint32_t value, char* buffer, int bufferSize) {
+void Uart::intToBinary(uint32_t value, char* buffer, int bufferSize) {
     int i = bufferSize - 1;
 
     buffer[i] = '\0';
@@ -74,11 +76,11 @@ void UART0_IntToBinary(uint32_t value, char* buffer, int bufferSize) {
     }
 }
 
-void UART0_SendCommand(uint32_t command) {
+void Uart::sendCommand(uint32_t command) {
     // Convert the hexadecimal command to a string
     char hexCommand[9];
-    UART0_IntToHex(command, hexCommand, sizeof(hexCommand));
+    intToHex(command, hexCommand, sizeof(hexCommand));
     
     // Send the command string
-    UART0_SendString(hexCommand);
+    sendString(hexCommand);
 }
