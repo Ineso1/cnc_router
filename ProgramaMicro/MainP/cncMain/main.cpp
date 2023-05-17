@@ -20,19 +20,17 @@ int main()
     Serial.init();
     Lcd.lcdInit();
     char receivedString[50];
+    Lcd.lcdClear();
 
     while (true) {
-        Lcd.lcdClear();
-        // Serial.sendString("Jalese compa\n");
-        // Lcd.lcdPrint("Jalese compa");
-        if (Serial.available()) {
         Serial.readString(receivedString, sizeof(receivedString), '\n');
         if (receivedString[0] != ' ') {
+            Lcd.lcdClear();
             char* gcode = new char[strlen(receivedString) + 1];
             strcpy(gcode, receivedString);
-            gcodeQueue.push(gcode);
+            Lcd.lcdPrint(gcode);
+            // gcodeQueue.push(gcode);
         }
-    }
     }
 }
 
