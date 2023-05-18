@@ -19,18 +19,16 @@ int main()
 {
     Serial.init();
     Lcd.lcdInit();
-    char receivedString[50];
+    const int bufferSize = 100;
+    char receivedString[bufferSize];
     Lcd.lcdClear();
 
     while (true) {
-        Serial.readString(receivedString, sizeof(receivedString), '\n');
-        if (receivedString[0] != ' ') {
+        if (Serial.available()) {
+            Serial.readString(receivedString, bufferSize, &Lcd);
+            // Process the received string as needed
             Lcd.lcdClear();
-            char* gcode = new char[strlen(receivedString) + 1];
-            strcpy(gcode, receivedString);
-            Lcd.lcdPrint(gcode);
-            // gcodeQueue.push(gcode);
+            Lcd.lcdPrint(receivedString);
         }
     }
 }
-

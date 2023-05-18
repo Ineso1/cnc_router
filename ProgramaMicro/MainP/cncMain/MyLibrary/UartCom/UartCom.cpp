@@ -111,7 +111,41 @@ void Uart::readString(char* buffer, int bufferSize, char termination) {
     buffer[i] = '\0';  // Null-terminate the string
 }
 
+void Uart::readString(char* stringVar) {
+    int i = 0;
+    char c = '\0';
+    
+    while (UART0->S1 & UART_S1_RDRF_MASK) {
+        c = UART0->D;
+        stringVar[i] = c;
+        i++;
+    }
+    stringVar[i] = '\0';  // Null-terminate the string
+}
+
+void Uart::readString(char* stringVar, int bufferSize, LcdDisp* Lcd) {
+    int i = 0;
+    char c;
+
+    while (UART0->S1 & UART_S1_RDRF_MASK) {
+        c = UART0->D;
+        // Lcd->lcdData(c);
+
+        if (i < bufferSize - 1) {
+            stringVar[i] = c;
+            i++;
+        }
+    }
+
+    // Null-terminate the string
+    if (i < bufferSize) {
+        stringVar[i] = '\0';
+    } else {
+        stringVar[bufferSize - 1] = '\0';
+    }
+}
+
+
 bool Uart::available() {
     return (UART0->S1 & UART_S1_RDRF_MASK);
 }
-
