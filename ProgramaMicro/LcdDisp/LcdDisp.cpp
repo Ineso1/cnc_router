@@ -1,8 +1,11 @@
 #include "LcdDisp.h"
 
 
-void LcdDisp::LcdDisp(){};
+LcdDisp::LcdDisp(){};
 
+/**
+ * @brief Pulses the Enable pin to latch the data.
+ */
 void LcdDisp::pulseEnable() {
     PTC->PDOR |= EN_PIN;
     delay_ms(5);
@@ -10,6 +13,10 @@ void LcdDisp::pulseEnable() {
     delay_ms(5);
 }
 
+/**
+ * @brief Sends a command to the LCD.
+ * @param command The command to send.
+ */
 void LcdDisp::lcdCommand(uint8_t command) {
     // Set RS pin LOW for command mode
     PTC->PDOR &= ~ (RS_PIN | RW_PIN); // RS = 0 (command mode)
@@ -25,6 +32,10 @@ void LcdDisp::lcdCommand(uint8_t command) {
 
 }
 
+/**
+ * @brief Sends a character to the LCD for display.
+ * @param data The character to send.
+ */
 void LcdDisp::lcdData(unsigned char data) {
     PTC->PDOR |= RS_PIN; // RS = 1 (data mode)
     PTC->PDOR &= ~RW_PIN; // RW = 0
@@ -36,12 +47,19 @@ void LcdDisp::lcdData(unsigned char data) {
     delay_ms(5);
 }
 
+/**
+ * @brief Clears the LCD display.
+ */
 void LcdDisp::lcdClear() {
     lcdCommand(0x01); // Send clear display command
     delay_ms(10);
     lcdCommand(0x80);   //Send cursor to first line
 }
 
+/**
+ * @brief Prints a string on the LCD.
+ * @param message The string to print.
+ */
 void LcdDisp::lcdPrint(const char* message) {
     while (*message != '\0') {
         lcdData(*message);
@@ -49,13 +67,20 @@ void LcdDisp::lcdPrint(const char* message) {
     }
 }
 
+/**
+ * @brief Sets the cursor position on the LCD.
+ * @param row The row number (0-1).
+ * @param column The column number (0-15).
+ */
 void LcdDisp::lcdSetCursor(int row, int column) {
     int row_offsets[] = {0x00, 0x40}; // Row offsets for a 20x4 LCD
     int offset = row_offsets[row] + column;
     lcdCommand(0x80 | offset); // Set cursor position command
 }
 
-
+/**
+ * @brief Initializes the LCD display.
+ */
 void LcdDisp::lcdInit(){
     // Enable clock to Port C
     SIM->SCGC5 |= SIM_SCGC5_PORTC_MASK;

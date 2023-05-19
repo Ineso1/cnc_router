@@ -21,6 +21,7 @@ class LcdDisp{
         #define DATA_PIN_7  (1 << 11) // Data pin 7 (PTC11)
 
     public:
+        LcdDisp();
         void lcdInit();
         void lcdCommand(uint8_t command);
         void lcdData(unsigned char data);

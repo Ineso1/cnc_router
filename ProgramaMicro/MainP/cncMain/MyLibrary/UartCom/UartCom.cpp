@@ -145,7 +145,6 @@ void Uart::readString(char* stringVar, int bufferSize, LcdDisp* Lcd) {
     }
 }
 
-
 bool Uart::available() {
     return (UART0->S1 & UART_S1_RDRF_MASK);
 }
