@@ -10,41 +10,36 @@
 KeyPad::KeyPad(){}
 
 void KeyPad::rstRows(){
-    PTA->PDDR &= ~ ( D1 | D2 | D4 );
-    PTD->PDDR &= ~ ( D3 ); 
+    PTB->PDDR &= ~ ( D1 | D2 | D3 | D4 );
 }
 
 void KeyPad::clrRows(){
-    PTA->PCOR = ( D1 | D2 | D4 );
-    PTD->PCOR = ( D3 ); 
+    PTB->PCOR = ( D1 | D2 | D3 | D4 );
 }
 
 void KeyPad::setRows(){
-    PTA->PDDR |= ( D1 | D2 | D4 );
-    PTD->PDDR |= ( D3 ); 
+    PTB->PDDR |= ( D1 | D2 | D3 | D4 );
 }
 
 void KeyPad::rstColumns(){
-    PTA->PDDR &= ~( D5 | D6 );
-    PTC->PDDR &= ~( D7 | D8 ); 
+    PTE->PDDR &= ~( D5 | D6 | D7 | D8 );
 }
 
 void KeyPad::setColumns(){
-    PTA->PDDR |= ( D5 | D6 );
-    PTC->PDDR |= ( D7 | D8 ); 
+    PTE->PDDR |= ( D5 | D6 | D7 | D8 );
 }
 
 void KeyPad::init(){
 
-    SIM->SCGC5 |= ( SIM_SCGC5_PORTA_MASK | SIM_SCGC5_PORTC_MASK | SIM_SCGC5_PORTD_MASK );
-    PORTA->PCR[1] = 0x103; //Row (PTA1) D1
-    PORTA->PCR[2] = 0x103; //Row (PTA2) D2
-    PORTD->PCR[4] = 0x103; //Row (PTD4) D3
-    PORTA->PCR[12] = 0x103; //Row (PTA12) D4
-    PORTA->PCR[4] = 0x103; //Column (PTA4) D5
-    PORTA->PCR[5] = 0x103; //Column (PTA5) D6
-    PORTC->PCR[8] = 0x103; //Column (PTC8) D7
-    PORTC->PCR[9] = 0x103; //Column (PTC9) D8
+    SIM->SCGC5 |= ( SIM_SCGC5_PORTB_MASK | SIM_SCGC5_PORTE_MASK );
+    PORTB->PCR[8] = 0x103; //Row (PTB1) D1
+    PORTB->PCR[9] = 0x103; //Row (PTB2) D2
+    PORTB->PCR[10] = 0x103; //Row (PTB4) D3
+    PORTB->PCR[11] = 0x103; //Row (PTB12) D4
+    PORTE->PCR[2] = 0x103; //Column (PTE4) D5
+    PORTE->PCR[3] = 0x103; //Column (PTE5) D6
+    PORTE->PCR[4] = 0x103; //Column (PTE8) D7
+    PORTE->PCR[5] = 0x103; //Column (PTE9) D8
 
     //Make all rows as input
     setRows();
@@ -55,9 +50,11 @@ void KeyPad::init(){
 }
 
 char KeyPad::getKey(){
-    SerialShit.sendString("getting shit");
-    delay_ms(100);
+
+    delay_ms(2);
     int row, col;
+    int rowNum;
+    int colNum;
 
     /* one row is active */
     /* check to see any key pressed */
@@ -67,21 +64,12 @@ char KeyPad::getKey(){
 
     delay_us(2); /* wait for signal return */
 
-    col = (PTA->PDIR & (D5 | D6)) | ((PTC->PDIR & (D7 | D8))>>2); /* read all columns */
-
-    char BinaryBuffer[33];
-    // UART0_IntToBinary(PTC->PDOR, pdorBinaryBuffer, sizeof(pdorBinaryBuffer));
-    // UART0_SendString("PTC_PDOR: ");
-    // UART0_SendString(pdorBinaryBuffer);
-    // UART0_SendString("\r\n");
-    SerialShit.intToBinary(col, BinaryBuffer, sizeof(BinaryBuffer));
-    SerialShit.sendString(BinaryBuffer);
-    SerialShit.sendString("\r\n");
+    col = (PTE->PDIR & (D5 | D6 | D7 | D8)) >> 2; /* read all columns */
 
     rstRows();
     rstColumns();
 
-    if (col == 0xF0)
+    if (col == 0xF)
     {
         return 0; /* No pressed */
     }
@@ -93,30 +81,24 @@ char KeyPad::getKey(){
         rstRows();
         rstColumns();
 
-        if(row <= 1 || row == 12){
-            PTA->PDDR |= rows[row];
-            PTA->PCOR = rows[row];
-        }
-        else{
-            PTD->PDDR |= rows[row];
-            PTD->PCOR = rows[row];
-        }
+        PTB->PDDR |= rows[row];
+        PTB->PCOR = rows[row];
 
         delay_us(2); /* wait for signal to settle */
-        col = (PTA->PDIR & (D5 | D6)) | ((PTC->PDIR & (D7 | D8))>>2); /* read all columns */
+        col = (PTE->PDIR & (D5 | D6 | D7 | D8)) >> 2; /* read all columns */
 
-        if (col != 0xF0) break; 
+        if (col != 0xF) break; 
         /* if one of the input is low, some key is pressed. */
     }
     rstRows();
     rstColumns();
 
-    if (row == 4)
-    return 0; /* if we get here, no key is pressed */
+    if (row == 4) return '0'; /* if we get here, no key is pressed */
 
-    if (col == 0xE0) return row * 4 + 1; /* key in column 0 */
-    if (col == 0xD0) return row * 4 + 2; /* key in column 1 */
-    if (col == 0xB0) return row * 4 + 3; /* key in column 2 */
-    if (col == 0x70) return row * 4 + 4; /* key in column 3 */
+    if (col == 0xE) return keypadValues[0][row]; /* key in column 0 */
+    if (col == 0xD) return keypadValues[1][row]; /* key in column 1 */
+    if (col == 0xB) return keypadValues[2][row]; /* key in column 2 */
+    if (col == 0x7) return keypadValues[3][row]; /* key in column 3 */
+
     return 0; /* just to be safe */
 }

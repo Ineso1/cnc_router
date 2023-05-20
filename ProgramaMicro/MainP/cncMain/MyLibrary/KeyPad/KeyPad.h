@@ -7,25 +7,21 @@
 #include <stdint.h>
 
 class KeyPad{
-
-    int32_t D1 = (1<<1); //Row 1 
-    int32_t D2 = (1<<2); //Row 2
-    int32_t D3 = (1<<4); //Row 3
-    int32_t D4 = (1<<12);  //Row 4
-    int32_t D5 = (1<<4); //Column 1
-    int32_t D6 = (1<<5); //Column 2
-    int32_t D7 = (1<<8); //Column 3
-    int32_t D8 = (1<<9); //Column 4
-    
     char keypadValues[4][4] = {
-        {'1', '2', '3', 'A'},
-        {'4', '5', '6', 'B'},
-        {'7', '8', '9', 'C'},
-        {'*', '0', '#', 'D'}
+        {'D', '#', '0', '*'},
+        {'C', '9', '8', '7'},
+        {'B', '6', '5', '4'},
+        {'A', '3', '2', '1'}
     };
-
-    Uart SerialShit;
-
+    int32_t D1 = (1<<8); //Row 1 
+    int32_t D2 = (1<<9); //Row 2
+    int32_t D3 = (1<<10); //Row 3
+    int32_t D4 = (1<<11);  //Row 4
+    int32_t D5 = (1<<2); //Column 1
+    int32_t D6 = (1<<3); //Column 2
+    int32_t D7 = (1<<4); //Column 3
+    int32_t D8 = (1<<5); //Column 4
+    
     private:
         void rstRows();
         void clrRows();
