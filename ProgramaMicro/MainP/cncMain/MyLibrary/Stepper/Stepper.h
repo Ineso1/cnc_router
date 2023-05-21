@@ -16,10 +16,11 @@ class Stepper{
         void setPins(int, int, int, int); //Pin de puerto E
         void disableMotor();
         void enableMotor();
+        void move_mm(float);
+
 
     private:
         void pulse();
-        void move_mm(float, int* ,int*, int*);
 };
 
 #endif

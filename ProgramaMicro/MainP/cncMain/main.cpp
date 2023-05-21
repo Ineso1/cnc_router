@@ -74,8 +74,9 @@ void Menu(){
 
 void ProcessGCodeLine(const std::string& gcodeLine) {
     Lcd.lcdClear();
-    Serial.sendString(gcodeLine);
+    // Serial.sendString(gcodeLine);
     Lcd.lcdPrint(gcodeLine);
+    delay_ms(5000);
 }
 
 void Start(){

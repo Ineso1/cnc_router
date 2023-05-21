@@ -56,7 +56,7 @@ void Stepper::pulse(){
  * @brief Move the stepper motor a specified distance in millimeters.
  * @param distance The distance to move in millimeters.
 */
-void Stepper::move_mm(float distance, int* x, int* y, int* z){
+void Stepper::move_mm(float distance){
     int stepsToMove = ((distance * steps) / (2.0 * PI * radius));  // Calculate the number of steps to move based on distance steps and the gear radius
 
     for (int i = 0; i < stepsToMove; i++) {

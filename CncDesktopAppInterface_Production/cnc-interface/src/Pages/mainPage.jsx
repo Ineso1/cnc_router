@@ -120,7 +120,7 @@ function MainPage() {
   }
 
   // const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
+  //No recursivo -> (problemas)
   const sendNextLine = async () => {
     let currentIndex = currentLineIndex;
     let coordinates = { ...currentCoordinates };

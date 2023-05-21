@@ -64,3 +64,9 @@ void Stepper::move_mm(float distance, int* x, int* y, int* z){
     }
 }
 
+/**
+ * @brief Getter function to retrieve the current position.
+*/
+int Stepper::getPosition() {
+    return position;
+}
