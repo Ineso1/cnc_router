@@ -1,4 +1,5 @@
 #include "UartCom.h"
+#include <string>
 
 Uart::Uart(){}
 
@@ -37,6 +38,14 @@ void Uart::sendString(const char* str) {
         sendChar(*str);
         str++;
     }
+}
+
+void Uart::sendString(std::string dataString) {
+    const int length = dataString.length();
+    char* char_array = new char[length + 1];
+    strcpy(char_array, dataString.c_str());
+    sendString(char_array);
+    delete [] char_array;
 }
 
 void Uart::intToHex(uint32_t value, char* buffer, int bufferSize) {
@@ -147,4 +156,30 @@ void Uart::readString(char* stringVar, int bufferSize) {
 
 bool Uart::available() {
     return (UART0->S1 & UART_S1_RDRF_MASK);
+}
+
+
+
+void Uart::readLine(char* buffer, int bufferSize) {
+    int i = 0;
+    char c;
+
+    while (i < bufferSize - 1) {
+        c = readChar();
+
+        if (c == '\n' || c == '\r' || c == '\0' || c == '*') {
+            buffer[i] = '\0';  // Null-terminate the string
+            return;
+        }
+
+        buffer[i] = c;
+        i++;
+    }
+
+    buffer[i] = '\0';  // Null-terminate the string
+    sendString(buffer);
+}
+
+bool Uart::receivedFinishFlag(const std::string& message) {
+    return (message == "end");
 }

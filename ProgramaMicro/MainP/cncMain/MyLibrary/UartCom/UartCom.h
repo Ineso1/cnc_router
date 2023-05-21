@@ -2,6 +2,7 @@
 #define UARTCOM_H
 #include <stdint.h>
 #include <MKL25Z4.h>
+#include <string>
 
 #define UART_READ_TIMEOUT 1
 class Uart{
@@ -14,6 +15,7 @@ class Uart{
         void init();
         void sendChar(char c);
         void sendString(const char* str);
+        void sendString(std::string dataString);
         void intToHex(uint32_t value, char* buffer, int bufferSize);
         void intToBinary(uint32_t value, char* buffer, int bufferSize);
         void sendCommand(uint32_t command);
@@ -22,6 +24,8 @@ class Uart{
         void readString(char*);
         void readString(char*, int); 
         bool available();
+        void readLine(char*, int);
+        bool receivedFinishFlag(const std::string& message);
     private:
 
 };

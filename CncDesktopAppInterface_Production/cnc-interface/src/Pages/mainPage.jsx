@@ -127,7 +127,7 @@ function MainPage() {
   
     while (currentIndex < linesToSend.length) {
       const line = linesToSend[currentIndex];
-      window.mySerialPort.writeToPort(line);
+      window.mySerialPort.writeToPort(line + "*");
   
       // Generate animation coordinates
       const animationCoords = animateGCode(coordinates.x, coordinates.y, coordinates.z, line, timeStep);
@@ -163,6 +163,7 @@ function MainPage() {
         currentIndex++; // Increment the currentIndex manually since we are not relying on state update
       }
     }
+    window.mySerialPort.writeToPort("end*");
   
     // Update the current coordinates after sending completes
     setCurrentCoordinates(coordinates);

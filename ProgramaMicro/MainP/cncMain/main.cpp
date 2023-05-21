@@ -15,7 +15,8 @@ KeyPad Pad;
 enum State {
     STATE_MENU,
     STATE_HOME,
-    STATE_CONFIG
+    STATE_CONFIG,
+    STATE_START
 };
 
 void setup(){
@@ -67,8 +68,52 @@ void Menu(){
     Lcd.lcdSetCursor(1, 0);
     Lcd.lcdPrint(dataString2);
     
-    while (!Pad.getKey() && !Serial.available()) { }
+    while (!Pad.getKey() && !Serial.available()) {}
     delay_ms(2);
+}
+
+void ProcessGCodeLine(const std::string& gcodeLine) {
+    Lcd.lcdClear();
+    Serial.sendString(gcodeLine);
+    Lcd.lcdPrint(gcodeLine);
+}
+
+void Start(){
+    Lcd.lcdClear();
+    Lcd.lcdPrint("Start");
+    delay_ms(200);
+    Lcd.lcdClear();
+
+    char gcodeLine[50];
+    bool readyForNextLine = true;
+    bool processFinished = false;
+
+    while (!processFinished) {
+        if (readyForNextLine) {
+            memset(gcodeLine, 0, sizeof(gcodeLine)); // Clean gcodeLine
+            Lcd.lcdPrint("waiting for line");
+            while (!Serial.available()) {}
+            Serial.readLine(gcodeLine, sizeof(gcodeLine));
+            Lcd.lcdClear();
+            readyForNextLine = false;
+            
+            if (Serial.receivedFinishFlag(gcodeLine)) {
+                processFinished = true;
+                readyForNextLine = true;
+            }
+            else {
+                ProcessGCodeLine(gcodeLine);
+                readyForNextLine = true;
+            }
+            if (readyForNextLine && !processFinished) {
+                Serial.sendString("ready");
+            }
+        }
+    }
+    Lcd.lcdClear();
+    Lcd.lcdPrint("Finalizado");
+    Serial.sendString("Finalizado");
+    delay_ms(2000);
 }
 
 int main()
@@ -100,6 +145,10 @@ int main()
                     mainState = STATE_CONFIG;
                 break;
 
+                case '3':
+                    mainState = STATE_START;
+                break;
+
                 default:
                     mainState = STATE_MENU;
                 break;
@@ -120,6 +169,10 @@ int main()
                     mainState = STATE_CONFIG;
                 break;
 
+                case '3':
+                    mainState = STATE_START;
+                break;
+
                 default:
                     mainState = STATE_MENU;
                 break;
@@ -135,6 +188,12 @@ int main()
             break;
             case STATE_CONFIG:
                 Config();
+            break;
+            case STATE_START:
+                Start();
+                mainState = STATE_MENU;
+                op_s = ' ';
+                op_c = ' ';
             break;
             default:
                 Menu();
