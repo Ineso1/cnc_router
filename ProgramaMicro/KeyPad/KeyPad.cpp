@@ -3,7 +3,7 @@
 /**
  * @file KeyPad.cpp
  *
- * @brief Class for numeric matrix keypad initialization.
+ * @brief Class for numeric matrix keypad initialization and key detection.
  */
 
 
@@ -29,6 +29,9 @@ void KeyPad::setColumns(){
     PTE->PDDR |= ( D5 | D6 | D7 | D8 );
 }
 
+/**
+ * @brief Initializes the keypad by configuring the necessary pins and registers.
+*/
 void KeyPad::init(){
 
     SIM->SCGC5 |= ( SIM_SCGC5_PORTB_MASK | SIM_SCGC5_PORTE_MASK );
@@ -49,6 +52,11 @@ void KeyPad::init(){
 
 }
 
+/**
+ * @brief Reads the pressed key from the keypad.
+ *
+ * @return The character corresponding to the pressed key. Returns '0' if no key is pressed.
+*/
 char KeyPad::getKey(){
 
     delay_ms(2);
@@ -95,6 +103,7 @@ char KeyPad::getKey(){
 
     if (row == 4) return '0'; /* if we get here, no key is pressed */
 
+    // Determine the key based on the column and row
     if (col == 0xE) return keypadValues[0][row]; /* key in column 0 */
     if (col == 0xD) return keypadValues[1][row]; /* key in column 1 */
     if (col == 0xB) return keypadValues[2][row]; /* key in column 2 */

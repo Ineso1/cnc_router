@@ -67,6 +67,18 @@ void LcdDisp::lcdPrint(const char* message) {
 }
 
 /**
+ * @brief Prints a string on the LCD.
+ * @param message The string to print.
+ */
+void LcdDisp::lcdPrint(std::string dataString) {
+    const int length = dataString.length();
+    char* char_array = new char[length + 1];
+    strcpy(char_array, dataString.c_str());
+    lcdPrint(char_array);
+    delete [] char_array;
+}
+
+/**
  * @brief Sets the cursor position on the LCD.
  * @param row The row number (0-1).
  * @param column The column number (0-15).

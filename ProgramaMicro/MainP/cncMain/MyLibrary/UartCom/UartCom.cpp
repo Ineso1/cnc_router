@@ -123,7 +123,7 @@ void Uart::readString(char* stringVar) {
     stringVar[i] = '\0';  // Null-terminate the string
 }
 
-void Uart::readString(char* stringVar, int bufferSize, LcdDisp* Lcd) {
+void Uart::readString(char* stringVar, int bufferSize) {
     int i = 0;
     char c;
 

@@ -1,6 +1,5 @@
 #include "LcdDisp.h"
 
-
 LcdDisp::LcdDisp(){};
 
 /**
@@ -26,7 +25,7 @@ void LcdDisp::lcdCommand(uint8_t command) {
     pulseEnable();
     
     if (command < 4)
-    delay_ms(10); /* command 1 and 2 needs up to 1.64ms */
+    delay_ms(6); /* command 1 and 2 needs up to 1.64ms */
     else
     delay_ms(5); /* all others 40 us */
 
@@ -52,7 +51,7 @@ void LcdDisp::lcdData(unsigned char data) {
  */
 void LcdDisp::lcdClear() {
     lcdCommand(0x01); // Send clear display command
-    delay_ms(10);
+    delay_ms(5);
     lcdCommand(0x80);   //Send cursor to first line
 }
 
@@ -65,6 +64,18 @@ void LcdDisp::lcdPrint(const char* message) {
         lcdData(*message);
         message++;
     }
+}
+
+/**
+ * @brief Prints a string on the LCD.
+ * @param message The string to print.
+ */
+void LcdDisp::lcdPrint(std::string dataString) {
+    const int length = dataString.length();
+    char* char_array = new char[length + 1];
+    strcpy(char_array, dataString.c_str());
+    lcdPrint(char_array);
+    delete [] char_array;
 }
 
 /**

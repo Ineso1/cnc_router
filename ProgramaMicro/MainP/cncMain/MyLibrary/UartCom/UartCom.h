@@ -2,8 +2,6 @@
 #define UARTCOM_H
 #include <stdint.h>
 #include <MKL25Z4.h>
-#include "LcdDisp.h"
-
 
 #define UART_READ_TIMEOUT 1
 class Uart{
@@ -22,7 +20,7 @@ class Uart{
         char readChar();
         void readString(char*, int, char);
         void readString(char*);
-        void readString(char*, int, LcdDisp*); 
+        void readString(char*, int); 
         bool available();
     private:
 

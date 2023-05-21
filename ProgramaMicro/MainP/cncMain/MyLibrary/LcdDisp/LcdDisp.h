@@ -4,6 +4,7 @@
 #include <MKL25Z4.h>
 #include "MklTime.h"
 #include <stdint.h>
+#include <string>
 
 class LcdDisp{
 
@@ -27,6 +28,7 @@ class LcdDisp{
         void lcdData(unsigned char data);
         void lcdClear();
         void lcdPrint(const char* message);
+        void lcdPrint(std::string);
         void lcdSetCursor(int row, int column);
 
     private:
