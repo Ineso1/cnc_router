@@ -76,7 +76,7 @@ void ProcessGCodeLine(const std::string& gcodeLine) {
     Lcd.lcdClear();
     // Serial.sendString(gcodeLine);
     Lcd.lcdPrint(gcodeLine);
-    delay_ms(5000);
+    // delay_ms(5000);
 }
 
 void Start(){
