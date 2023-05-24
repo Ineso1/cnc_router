@@ -7,10 +7,13 @@
 #include <string>
 #include <cstring>
 #include <cstdlib>
+#include "Stepper.h"
 
 LcdDisp Lcd;
 Uart Serial;
 KeyPad Pad;
+Stepper motorx;
+    
 
 enum State {
     STATE_MENU,
@@ -27,6 +30,7 @@ void setup(){
     Lcd.lcdPrint("Iniciando...");
     delay_ms(5000);
     Lcd.lcdClear();
+    motorx.setPins(30, 29, 200, 50);
 }
 
 
@@ -50,6 +54,9 @@ void Home(float xCoord, float yCoord, float zCoord, const char* coordType) {
 void Config(){
     Lcd.lcdClear();
     Lcd.lcdPrint("Configuration");
+
+    delay_ms(2000);
+    motorx.move_mm(500.5);
     while (!Pad.getKey() && !Serial.available()){}
     delay_ms(2);
 }

@@ -64,3 +64,13 @@ void Stepper::move_mm(float distance){
     }
 }
 
+/**
+ * @brief Getter function to retrieve the current position.
+*/
+int Stepper::getPosition() {
+    return position;
+}
+
+void Stepper::setPulseDelay(int delay){
+    pulseDelay = delay;
+}

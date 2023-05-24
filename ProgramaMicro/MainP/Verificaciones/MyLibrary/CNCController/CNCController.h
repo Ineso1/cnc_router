@@ -28,17 +28,21 @@ class CNCController{
         float calculateRadius(float centerX, float centerY, float endX, float endY);
         float calculateAngle(float centerX, float centerY, float x, float y, float radius);
 
+        void enableTPM();
+        void disableTPM();
+
     public:
         CNCController();
-        void setPinX(int pin, int enable, int steps, int radius, int stopSwitch);
-        void setPinY(int pin, int enable, int steps, int radius, int stopSwitch);
-        void setPinZ(int pin, int enable, int steps, int radius, int stopSwitch);
+        void setPinX(char pinPort, int pin, char enablePort, int enable, int steps, int radius, int stopSwitch);
+        void setPinY(char pinPort, int pin, char enablePort, int enable, int steps, int radius, int stopSwitch);
+        void setPinZ(char pinPort, int pin, char enablePort, int enable, int steps, int radius, int stopSwitch);
 
         void initStopSwitches();
 
         void moveX(float distance); 
         void moveY(float distance);
         void moveZ(float distance);
+        void moveTo(float x, float y, float z);
 
         void moveArc(float centerX, float centerY, float endX, float endY, bool isClockwise);
 

@@ -1,5 +1,5 @@
-#ifndef MOVEMOTOR_H
-#define MOVEMOTOR_H
+#ifndef STEPPER_H
+#define STEPPER_H
 
 #include <MKL25Z4.H>
 #include <stdint.h>
@@ -11,16 +11,21 @@ class Stepper{
         int8_t enable; // Pin connected to the ENABLE signal of the stepper motor driver
         int steps; // Number of steps per revolution of the stepper motor
         float radius; // Radius of the pulley or gear attached to the stepper motor
+        int position;    // Current position of the stepper motor
+        int pulseDelay = 200;
 
     public:
         void setPins(int, int, int, int); //Pin de puerto E
         void disableMotor();
         void enableMotor();
+        int getPosition();  // Getter function to retrieve the current position
         void move_mm(float);
+        void setPulseDelay(int);
+
 
 
     private:
         void pulse();
 };
 
-#endif
+#endif //STEPPER_H
