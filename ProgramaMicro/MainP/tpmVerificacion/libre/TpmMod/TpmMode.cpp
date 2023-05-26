@@ -22,6 +22,7 @@ void TpmMod::init(int tpmNum, int channel){
     default:
         break;
     }
+    setPrescaler(128);
 
 }
 

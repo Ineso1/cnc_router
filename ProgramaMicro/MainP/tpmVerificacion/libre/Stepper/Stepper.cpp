@@ -1,5 +1,4 @@
 #include "Stepper.h"
-#include <cstdint>
 
 
 Stepper::Stepper(){}
@@ -11,14 +10,15 @@ Stepper::Stepper(){}
  * @param steps The number of steps per revolution of the stepper motor.
  * @param radius The radius of the pulley or gear attached to the stepper motor.
 */
-void Stepper::setPins(char pinPort, int pin, char directionPort, int direction, int steps, int radius, int tpmNum) {
+void Stepper::setPins(char pinPort, int pin, char directionPort, int direction, int steps, int radius, int tpmN, int channel) {
     this->pinPort = pinPort;
     this->directionPort = directionPort;
     this->pin = (1 << pin);
     this->direction = (1 << direction);
     this->steps = steps;
     this->radius = radius;
-    this->tpm = tpmNum;
+    tpm.init(tpmN, channel);
+    tpm.enablePort(pinPort, pin);
 
     // Set the pin and enable directions based on the selected port
     switch (pinPort) {
@@ -222,6 +222,7 @@ void Stepper::move_mm(float distance){
     for (int i = 0; i < stepsToMove; i++) {
         pulse();  // Generate a pulse for each step
     }
+    position += distance; 
 }
 
 /**
@@ -236,12 +237,7 @@ void Stepper::setPulseDelay(int delay){
 }
 
 
-
-
-
-
-
-/* Para usar tpm */
+/* For tpm use */
 
 /*
 
@@ -263,31 +259,16 @@ pulseDuration = period / 2 = 2 milliseconds / 2 = 1 millisecond
 
 
 */
+void Stepper::enableTpm(){
+    tpm.enable();
+}
 
 void Stepper::useTpm(){
-    switch (pinPort) {     // Set as TPM0_CH0
-        case 'A':
-            PORTA->PCR[pin] = PORT_PCR_MUX(3);
-            break;
-        case 'B':
-            PORTB->PCR[pin] = PORT_PCR_MUX(3);
-            break;
-        case 'C':
-            PORTC->PCR[pin] = PORT_PCR_MUX(3);
-            break;
-        case 'D':
-            PORTD->PCR[pin] = PORT_PCR_MUX(3);
-            break;
-        case 'E':
-            PORTE->PCR[pin] = PORT_PCR_MUX(3);
-            break;
-        default:
-            // Invalid port selection
-            break;
-    }
+    tpm.enablePort(pinPort, pin);
 }
 
 void Stepper::quitTpm(){
+    tpm.disable();
     // Set the pin and enable directions based on the selected port
     switch (pinPort) {
         case 'A':
@@ -361,4 +342,12 @@ int Stepper::calculateSteps_mm(float distance) {
     }
     int stepsToMove = static_cast<int>((distance * steps) / (2.0 * PI * radius));
     return stepsToMove;
+}
+
+void Stepper::setTpmMod(int mod){
+    tpm.setModulo(mod);
+}
+
+void Stepper::setChValue(int value){
+    tpm.setChannelValue(value);
 }
