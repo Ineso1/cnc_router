@@ -7,17 +7,18 @@ Stepper::Stepper(){}
 /**
  * @brief Set the pins for controlling the stepper motor.
  * @param pin The pin number connected to the STEP signal of the stepper motor driver.
- * @param enable The pin number connected to the ENABLE signal of the stepper motor driver.
+ * @param direction The pin number connected to the ENABLE signal of the stepper motor driver.
  * @param steps The number of steps per revolution of the stepper motor.
  * @param radius The radius of the pulley or gear attached to the stepper motor.
 */
-void Stepper::setPins(char pinPort, int pin, char enablePort, int enable, int steps, int radius) {
+void Stepper::setPins(char pinPort, int pin, char directionPort, int direction, int steps, int radius, int tpmNum) {
     this->pinPort = pinPort;
-    this->enablePort = enablePort;
+    this->directionPort = directionPort;
     this->pin = (1 << pin);
-    this->enable = (1 << enable);
+    this->direction = (1 << direction);
     this->steps = steps;
     this->radius = radius;
+    this->tpm = tpmNum;
 
     // Set the pin and enable directions based on the selected port
     switch (pinPort) {
@@ -51,31 +52,31 @@ void Stepper::setPins(char pinPort, int pin, char enablePort, int enable, int st
             break;
     }
 
-    switch (enablePort) {
+    switch (directionPort) {
         case 'A':
             SIM->SCGC5 |= SIM_SCGC5_PORTA_MASK;
-            PORTA->PCR[enable] = 0x100;
-            PTA->PDDR |= this->enable;
+            PORTA->PCR[direction] = 0x100;
+            PTA->PDDR |= this->direction;
             break;
         case 'B':
             SIM->SCGC5 |= SIM_SCGC5_PORTB_MASK;
-            PORTB->PCR[enable] = 0x100;
-            PTB->PDDR |= this->enable;
+            PORTB->PCR[direction] = 0x100;
+            PTB->PDDR |= this->direction;
             break;
         case 'C':
             SIM->SCGC5 |= SIM_SCGC5_PORTC_MASK;
-            PORTC->PCR[enable] = 0x100;
-            PTC->PDDR |= this->enable;
+            PORTC->PCR[direction] = 0x100;
+            PTC->PDDR |= this->direction;
             break;
         case 'D':
             SIM->SCGC5 |= SIM_SCGC5_PORTD_MASK;
-            PORTD->PCR[enable] = 0x100;
-            PTD->PDDR |= this->enable;
+            PORTD->PCR[direction] = 0x100;
+            PTD->PDDR |= this->direction;
             break;
         case 'E':
             SIM->SCGC5 |= SIM_SCGC5_PORTE_MASK;
-            PORTE->PCR[enable] = 0x100;
-            PTE->PDDR |= this->enable;
+            PORTE->PCR[direction] = 0x100;
+            PTE->PDDR |= this->direction;
             break;
         default:
             // Invalid port selection
@@ -92,57 +93,66 @@ int8_t Stepper::getPin(){
 }
 
 /**
- * @brief Disable the stepper motor by setting the ENABLE pin to the appropriate level.
+ * @brief Disable the stepper motor by setting the direction pin to the appropriate level.
 */
-void Stepper::disableMotor(){
-    switch (enablePort) {
+void Stepper::negativeDirection(){
+    switch (directionPort) {
         case 'A':
-            PTA->PDOR &= ~(this->enable);
+            PTA->PDOR &= ~(this->direction);
             break;
         case 'B':
-            PTB->PDOR &= ~(this->enable);
+            PTB->PDOR &= ~(this->direction);
             break;
         case 'C':
-            PTC->PDOR &= ~(this->enable);
+            PTC->PDOR &= ~(this->direction);
             break;
         case 'D':
-            PTD->PDOR &= ~(this->enable);
+            PTD->PDOR &= ~(this->direction);
             break;
         case 'E':
-            PTE->PDOR &= ~(this->enable);
+            PTE->PDOR &= ~(this->direction);
             break;
         default:
             // Invalid port selection
             break;
     }
 }
-
 
 /**
- * @brief Enable the stepper motor by setting the ENABLE pin to the appropriate level.
+ * @brief Enable the stepper motor by setting the direction pin to the appropriate level.
 */
-void Stepper::enableMotor(){
-    switch (enablePort) {
+void Stepper::positiveDirection(){
+    switch (directionPort) {
         case 'A':
-            PTA->PDOR |= (this->enable);
+            PTA->PDOR |= (this->direction);
             break;
         case 'B':
-            PTB->PDOR |= (this->enable);
+            PTB->PDOR |= (this->direction);
             break;
         case 'C':
-            PTC->PDOR |= (this->enable);
+            PTC->PDOR |= (this->direction);
             break;
         case 'D':
-            PTD->PDOR |= (this->enable);
+            PTD->PDOR |= (this->direction);
             break;
         case 'E':
-            PTE->PDOR |= (this->enable);
+            PTE->PDOR |= (this->direction);
             break;
         default:
             // Invalid port selection
             break;
     }
 }
+
+void Stepper::setDirection(bool direction){
+    if (direction) {
+        negativeDirection();
+    }
+    else {
+        positiveDirection();
+    }
+}
+
 
 /**
  * @brief Generate a pulse on the STEP pin to move the stepper motor by one step.
@@ -199,6 +209,14 @@ void Stepper::pulse(){
  * @param distance The distance to move in millimeters.
 */
 void Stepper::move_mm(float distance){
+    quitTpm();
+    if (distance < 0) {
+        distance *= -1;
+        setDirection(true);
+    }
+    else {
+        setDirection(false);
+    }
     int stepsToMove = ((distance * steps) / (2.0 * PI * radius));  // Calculate the number of steps to move based on distance steps and the gear radius
 
     for (int i = 0; i < stepsToMove; i++) {
@@ -307,9 +325,10 @@ int Stepper::calculatePulseDuration(int period) {
         return period / 2;
     }
 
-void Stepper::move_mm(float distance, int delayTime) {
+/*Diferentes periodos???*/
+void Stepper::move_mm(float distance, bool tpm) {
         int stepsToMove = ((distance * steps) / (2.0 * PI * radius));
-        int period = calculatePeriod(delayTime);
+        int period = calculatePeriod(pulseDelay);
         int pulseDuration = calculatePulseDuration(period);
 
         // Set TPM0 period and pulse duration
@@ -321,7 +340,7 @@ void Stepper::move_mm(float distance, int delayTime) {
         // Generate pulses for each step
         for (int i = 0; i < stepsToMove; i++) {
             pulse();
-            delay_ms(delayTime);
+            delay_ms(pulseDelay);
         }
 
         // Disable TPM0 counter and reset TPM0 channel 0 to default settings
@@ -329,4 +348,17 @@ void Stepper::move_mm(float distance, int delayTime) {
         // TPM0_C0SC = 0;
 
 
+}
+
+/**
+ * @brief Calculate the number of steps required to move the stepper motor a specified distance in millimeters.
+ * @param distance The distance to move in millimeters.
+ * @return The number of steps required.
+ */
+int Stepper::calculateSteps_mm(float distance) {
+    if (distance < 0) {
+        distance *= -1;
+    }
+    int stepsToMove = static_cast<int>((distance * steps) / (2.0 * PI * radius));
+    return stepsToMove;
 }

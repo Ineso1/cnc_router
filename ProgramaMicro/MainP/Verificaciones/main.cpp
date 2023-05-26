@@ -17,9 +17,9 @@ int main()
     SerialShit.init();
     Lcd.lcdInit();
     Pad.init();
-    Control.setPinX('D', 0, 'D', 5, 2000, 10, 2);
-    Control.setPinY('E', 1, 'E', 0, 2000, 10, 3);
-    Control.setPinZ('A', 16, 'A', 17, 2000, 10, 4);
+    Control.setPinX('C', 1, 'C', 2, 2000, 10, 2);
+    Control.setPinY('B', 3, 'B', 2, 2000, 10, 3);
+    Control.setPinZ('B', 1, 'B', 0, 2000, 10, 4);
 
     char key;
 
@@ -31,6 +31,18 @@ int main()
             SerialShit.sendChar(key);
             Lcd.lcdData(key);
             Control.moveX(1);
+        }
+        if(key == '1'){
+            Lcd.lcdClear();
+            SerialShit.sendChar(key);
+            Lcd.lcdData(key);
+            Control.moveX(-1);
+        }
+        if(key == '2'){
+            Lcd.lcdClear();
+            SerialShit.sendChar(key);
+            Lcd.lcdData(key);
+            Control.moveTo(1,1,1);
         }
         else {
             Lcd.lcdClear();
