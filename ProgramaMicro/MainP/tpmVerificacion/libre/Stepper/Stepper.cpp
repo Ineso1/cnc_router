@@ -13,7 +13,7 @@ Stepper::Stepper(){}
 void Stepper::setPins(char pinPort, int pin, char directionPort, int direction, int steps, int radius, int tpmN, int channel) {
     this->pinPort = pinPort;
     this->directionPort = directionPort;
-    this->pin = (1 << pin);
+    this->pin = pin;
     this->direction = (1 << direction);
     this->steps = steps;
     this->radius = radius;
@@ -24,28 +24,18 @@ void Stepper::setPins(char pinPort, int pin, char directionPort, int direction, 
     switch (pinPort) {
         case 'A':
             SIM->SCGC5 |= SIM_SCGC5_PORTA_MASK;
-            PORTA->PCR[pin] = 0x100;
-            PTA->PDDR |= this->pin;
             break;
         case 'B':
             SIM->SCGC5 |= SIM_SCGC5_PORTB_MASK;
-            PORTB->PCR[pin] = 0x100;
-            PTB->PDDR |= this->pin;
             break;
         case 'C':
             SIM->SCGC5 |= SIM_SCGC5_PORTC_MASK;
-            PORTC->PCR[pin] = 0x100;
-            PTC->PDDR |= this->pin;
             break;
         case 'D':
             SIM->SCGC5 |= SIM_SCGC5_PORTD_MASK;
-            PORTD->PCR[pin] = 0x100;
-            PTD->PDDR |= this->pin;
             break;
         case 'E':
             SIM->SCGC5 |= SIM_SCGC5_PORTE_MASK;
-            PORTE->PCR[pin] = 0x100;
-            PTE->PDDR |= this->pin;
             break;
         default:
             // Invalid port selection
@@ -160,33 +150,33 @@ void Stepper::setDirection(bool direction){
 void Stepper::pulse(){
     switch (pinPort) {
         case 'A':
-            PTA->PDOR |= (this->pin);
+            PTA->PDOR |= (1<<this->pin);
             delay_ms(pulseDelay);
-            PTA->PDOR &= ~(this->pin);
+            PTA->PDOR &= ~(1<<this->pin);
             delay_ms(pulseDelay);
             break;
         case 'B':
-            PTB->PDOR |= (this->pin);
+            PTB->PDOR |= (1<<this->pin);
             delay_ms(pulseDelay);
-            PTB->PDOR &= ~(this->pin);
+            PTB->PDOR &= ~(1<<this->pin);
             delay_ms(pulseDelay);
             break;
         case 'C':
-            PTC->PDOR |= (this->pin);
+            PTC->PDOR |= (1<<this->pin);
             delay_ms(pulseDelay);
-            PTC->PDOR &= ~(this->pin);
+            PTC->PDOR &= ~(1<<this->pin);
             delay_ms(pulseDelay);
             break;
         case 'D':
-            PTD->PDOR |= (this->pin);
+            PTD->PDOR |= (1<<this->pin);
             delay_ms(pulseDelay);
-            PTD->PDOR &= ~(this->pin);
+            PTD->PDOR &= ~(1<<this->pin);
             delay_ms(pulseDelay);
             break;
         case 'E':
-            PTE->PDOR |= (this->pin);
+            PTE->PDOR |= (1<<this->pin);
             delay_ms(pulseDelay);
-            PTE->PDOR &= ~(this->pin);
+            PTE->PDOR &= ~(1<<this->pin);
             delay_ms(pulseDelay);
             break;
         default:
@@ -269,27 +259,34 @@ void Stepper::useTpm(){
 
 void Stepper::quitTpm(){
     tpm.disable();
+    tpm.setModulo(0);
+    tpm.setChannelValue(0);
     // Set the pin and enable directions based on the selected port
     switch (pinPort) {
         case 'A':
-            PORTA->PCR[pin] = 0x100;
-            PTA->PDDR |= this->pin;
+            SIM->SCGC5 |= SIM_SCGC5_PORTA_MASK;
+            PORTA->PCR[pin] = PORT_PCR_MUX(1);
+            PTA->PDDR |= (1<<this->pin);
             break;
         case 'B':
-            PORTB->PCR[pin] = 0x100;
-            PTB->PDDR |= this->pin;
+            SIM->SCGC5 |= SIM_SCGC5_PORTB_MASK;
+            PORTB->PCR[pin] = PORT_PCR_MUX(1);
+            PTB->PDDR |= (1<<this->pin);
             break;
         case 'C':
-            PORTC->PCR[pin] = 0x100;
-            PTC->PDDR |= this->pin;
+            SIM->SCGC5 |= SIM_SCGC5_PORTC_MASK;
+            PORTC->PCR[pin] = PORT_PCR_MUX(1);
+            PTC->PDDR |= (1<<this->pin);
             break;
         case 'D':
-            PORTD->PCR[pin] = 0x100;
-            PTD->PDDR |= this->pin;
+            SIM->SCGC5 |= SIM_SCGC5_PORTD_MASK;
+            PORTD->PCR[pin] = PORT_PCR_MUX(1);
+            PTD->PDDR |= (1<<this->pin);
             break;
         case 'E':
-            PORTE->PCR[pin] = 0x100;
-            PTE->PDDR |= this->pin;
+            SIM->SCGC5 |= SIM_SCGC5_PORTE_MASK;
+            PORTE->PCR[pin] = PORT_PCR_MUX(1);
+            PTE->PDDR |= (1<<this->pin);
             break;
         default:
             // Invalid port selection
@@ -350,4 +347,8 @@ void Stepper::setTpmMod(int mod){
 
 void Stepper::setChValue(int value){
     tpm.setChannelValue(value);
+}
+
+void Stepper::setTpmPrescaler(int prescaler){
+    tpm.setPrescaler(prescaler);
 }

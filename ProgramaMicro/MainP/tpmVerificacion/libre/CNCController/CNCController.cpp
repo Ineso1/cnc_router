@@ -94,15 +94,15 @@ void CNCController::moveTo(float x, float y, float z){
     int maxSteps = maxStep(stepsX, stepsY, stepsZ);
 
     // // Calculate the prescaler and compare values based on the maximum steps
-    // uint16_t prescalerX = calculatePrescaler(stepsX, maxSteps);
-    // uint16_t compareX = calculateCompareValue(stepsX, maxSteps, prescalerX);
-    // uint16_t prescalerY = calculatePrescaler(stepsY, maxSteps);
-    // uint16_t compareY = calculateCompareValue(stepsY, maxSteps, prescalerY);
-    // uint16_t prescalerZ = calculatePrescaler(stepsZ, maxSteps);
-    // uint16_t compareZ = calculateCompareValue(stepsZ, maxSteps, prescalerZ);
+    uint16_t prescalerX = calculatePrescaler(stepsX, maxSteps);
+    uint16_t compareX = calculateCompareValue(stepsX, maxSteps, prescalerX);
+    uint16_t prescalerY = calculatePrescaler(stepsY, maxSteps);
+    uint16_t compareY = calculateCompareValue(stepsY, maxSteps, prescalerY);
+    uint16_t prescalerZ = calculatePrescaler(stepsZ, maxSteps);
+    uint16_t compareZ = calculateCompareValue(stepsZ, maxSteps, prescalerZ);
     
     // Set the prescaler and compare values for each TPM (Timer/Counter)
-    // setPrescalerCompare(prescalerX, compareX, prescalerY, compareY, prescalerZ, compareZ);
+    setPrescalerCompare(prescalerX, compareX, prescalerY, compareY, prescalerZ, compareZ);
 
     // Enable TPMs
     motorX.enableTpm();
@@ -112,13 +112,18 @@ void CNCController::moveTo(float x, float y, float z){
 
 void CNCController::setPrescalerCompare(uint16_t prescalerX, uint16_t compareX, uint16_t prescalerY, uint16_t compareY, uint16_t prescalerZ, uint16_t compareZ) {
   // Configure the TPM module with the specified prescaler and compare value
-    motorX.setTpmMod(prescalerX);
-    motorY.setTpmMod(prescalerY);
-    motorZ.setTpmMod(prescalerZ);
+    motorX.setTpmMod(16);
+    motorY.setTpmMod(16);
+    motorZ.setTpmMod(16);
 
-    motorX.setTpmMod(compareX);
-    motorY.setTpmMod(compareY);
-    motorZ.setTpmMod(compareZ);
+    motorX.setChValue(13003);
+    motorX.setChValue(13003);
+    motorX.setChValue(13003);
+
+
+    motorX.setTpmMod(43703);
+    motorY.setTpmMod(43703);
+    motorZ.setTpmMod(43703);
 
 }
 
@@ -181,3 +186,4 @@ int CNCController::calculatePrescaler(int steps, int maxSteps) {
 
     return prescaler;
 }
+

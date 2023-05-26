@@ -19,7 +19,6 @@ void Stepper::setPins(char pinPort, int pin, char directionPort, int direction, 
     this->steps = steps;
     this->radius = radius;
     this->tpm = tpmNum;
-
     // Set the pin and enable directions based on the selected port
     switch (pinPort) {
         case 'A':

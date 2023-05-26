@@ -42,6 +42,8 @@ class Stepper{
         int calculateSteps_mm(float distance);
         void setTpmMod(int mod);
         void setChValue(int value);
+        void setTpmPrescaler(int value);
+
         void enableTpm();
 
     private:

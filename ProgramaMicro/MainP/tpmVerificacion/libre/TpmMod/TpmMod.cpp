@@ -33,10 +33,12 @@ void TpmMod::enablePort(char pinPort, int pin){
         case 'A':
             SIM->SCGC5 |= SIM_SCGC5_PORTA_MASK;
             PORTA->PCR[pin] = PORT_PCR_MUX(3);
+            PTA->PDDR &= ~(1<<pin);
             break;
         case 'B':
             SIM->SCGC5 |= SIM_SCGC5_PORTB_MASK;
             PORTB->PCR[pin] = PORT_PCR_MUX(3);
+            PTB->PDDR &= ~(1<<pin);
             break;
         case 'C':
             SIM->SCGC5 |= SIM_SCGC5_PORTC_MASK;
@@ -46,14 +48,17 @@ void TpmMod::enablePort(char pinPort, int pin){
             else {
                 PORTC->PCR[pin] = PORT_PCR_MUX(3);
             }
+            PTC->PDDR &= ~(1<<pin);
             break;
         case 'D':
             SIM->SCGC5 |= SIM_SCGC5_PORTD_MASK;
             PORTD->PCR[pin] = PORT_PCR_MUX(4);
+            PTD->PDDR &= ~(1<<pin);
             break;
         case 'E':
             SIM->SCGC5 |= SIM_SCGC5_PORTE_MASK;
             PORTE->PCR[pin] = PORT_PCR_MUX(3);
+            PTE->PDDR &= ~(1<<pin);
             break;
         default:
             // Invalid port selection
