@@ -74,6 +74,55 @@ void Stepper::setPins(char pinPort, int pin, char directionPort, int direction, 
     }
 }
 
+void Stepper::setDirection(bool direction){
+    if (direction) {
+        negativeDirection();
+    }
+    else {
+        positiveDirection();
+    }
+}
+
+void Stepper::setPulsesTarget(int stepsNum){
+    tpm.target_pulses = stepsNum;
+}
+
+void Stepper::setTpmMod(int mod){
+    tpm.setModulo(mod);
+}
+
+void Stepper::setChValue(int value){
+    tpm.setChannelValue(value);
+}
+
+void Stepper::setTpmPrescaler(int prescaler){
+    tpm.setPrescaler(prescaler);
+}
+
+void Stepper::clrPulseCounter(){
+    tpm.pulse_counter = 0;
+}
+
+void Stepper::addPulseCounter(){
+    tpm.pulse_counter++ ;
+}
+
+void Stepper::setPulseDelay(int delay){
+    pulseDelay = delay;
+}
+
+/**
+ * @brief Getter function to retrieve the current position.
+*/
+int Stepper::getPosition() {
+    return position;
+}
+
+
+int Stepper::getPulseCounter(){
+    return tpm.pulse_counter;
+}
+
 char Stepper::getPinPort(){
     return pinPort;
 }
@@ -81,6 +130,11 @@ char Stepper::getPinPort(){
 int8_t Stepper::getPin(){
     return pin;
 }
+
+bool Stepper::tpmProcess(){
+    return tpm.available();
+}
+
 
 /**
  * @brief Disable the stepper motor by setting the direction pin to the appropriate level.
@@ -134,16 +188,6 @@ void Stepper::positiveDirection(){
     }
 }
 
-void Stepper::setDirection(bool direction){
-    if (direction) {
-        negativeDirection();
-    }
-    else {
-        positiveDirection();
-    }
-}
-
-
 /**
  * @brief Generate a pulse on the STEP pin to move the stepper motor by one step.
 */
@@ -185,46 +229,7 @@ void Stepper::pulse(){
     }
 }
 
-/*
-    N pulsos -> 1rev
 
-    steps -> Diametro * pi
-    steps? -> distancia
-
-    distancia * steps / (2*radius*pi)
-*/
-
-/**
- * @brief Move the stepper motor a specified distance in millimeters.
- * @param distance The distance to move in millimeters.
-*/
-void Stepper::move_mm(float distance){
-    quitTpm();
-    if (distance < 0) {
-        distance *= -1;
-        setDirection(true);
-    }
-    else {
-        setDirection(false);
-    }
-    int stepsToMove = ((distance * steps) / (2.0 * PI * radius));  // Calculate the number of steps to move based on distance steps and the gear radius
-
-    for (int i = 0; i < stepsToMove; i++) {
-        pulse();  // Generate a pulse for each step
-    }
-    position += distance; 
-}
-
-/**
- * @brief Getter function to retrieve the current position.
-*/
-int Stepper::getPosition() {
-    return position;
-}
-
-void Stepper::setPulseDelay(int delay){
-    pulseDelay = delay;
-}
 
 
 /* For tpm use */
@@ -283,73 +288,72 @@ int Stepper::calculatePulseDuration(int period) {
         return period / 2;
     }
 
-/*Diferentes periodos???*/
-void Stepper::move_mm(float distance, bool tpm) {
-        int stepsToMove = ((distance * steps) / (2.0 * PI * radius));
-        int period = calculatePeriod(pulseDelay);
-        int pulseDuration = calculatePulseDuration(period);
-
-        // Set TPM0 period and pulse duration
-        // TPM0_MOD = period;
-        // TPM0_C0V = pulseDuration;
-
-        // Enable TPM0 counter
-
-        // Generate pulses for each step
-        for (int i = 0; i < stepsToMove; i++) {
-            pulse();
-            delay_ms(pulseDelay);
-        }
-
-        // Disable TPM0 counter and reset TPM0 channel 0 to default settings
-        // TPM0_SC = 0;
-        // TPM0_C0SC = 0;
-
-
-}
-
 /**
  * @brief Calculate the number of steps required to move the stepper motor a specified distance in millimeters.
  * @param distance The distance to move in millimeters.
  * @return The number of steps required.
  */
-int Stepper::calculateSteps_mm(float distance) {
+int Stepper::calculateSteps_mm(float target) {
+    int distance = target - position;
     if (distance < 0) {
         distance *= -1;
+        setDirection(true);
     }
-    int stepsToMove = static_cast<int>((distance * steps) / (2.0 * PI * radius));
-    return stepsToMove;
-}
-
-void Stepper::setTpmMod(int mod){
-    tpm.setModulo(mod);
-}
-
-void Stepper::setChValue(int value){
-    tpm.setChannelValue(value);
-}
-
-void Stepper::setTpmPrescaler(int prescaler){
-    tpm.setPrescaler(prescaler);
+    else {
+        setDirection(false);
+    }
+    return ((distance * steps) / (2.0 * PI * radius));
 }
 
 
-void Stepper::clrPulseCounter(){
-    tpm.pulse_counter = 0;
+/*
+    N pulsos -> 1rev
+
+    steps -> Diametro * pi
+    steps? -> distancia
+
+    distancia * steps / (2*radius*pi)
+*/
+/**
+ * @brief Move the stepper motor a specified distance in millimeters.
+ * @param distance The distance to move in millimeters.
+*/
+void Stepper::move_mm(float distance){
+    quitTpm();
+    if (distance < 0) {
+        distance *= -1;
+        setDirection(true);
+    }
+    else {
+        setDirection(false);
+    }
+    int stepsToMove = ((distance * steps) / (2.0 * PI * radius));  // Calculate the number of steps to move based on distance steps and the gear radius
+
+    for (int i = 0; i < stepsToMove; i++) {
+        pulse();  // Generate a pulse for each step
+    }
+    position += distance; 
 }
 
-void Stepper::addPulseCounter(){
-    tpm.pulse_counter++ ;
-}
 
-int Stepper::getPulseCounter(){
-    return tpm.pulse_counter;
-}
+void Stepper::moveTo(int target) {
+    
+    useTpm();
+    clrPulseCounter();
+    int stepsToMove = calculateSteps_mm(target);
+    setPulsesTarget(10);
 
-void Stepper::setPulsesTarget(int stepsNum){
-    tpm.target_pulses = stepsNum;
-}
+    tpm.setChannelValue(7000);
+    tpm.setModulo(14000);
+    tpm.setPrescaler(128);
+    
+    enableTpm();
+    position = target;
 
-bool Stepper::tpmProcess(){
-    return tpm.available();
+    while (getPulseCounter() < stepsToMove) {
+        // Do nothing and keep waiting
+    }
+
+    // Disable TPM module
+    quitTpm();
 }
