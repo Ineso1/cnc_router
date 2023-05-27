@@ -10,7 +10,14 @@ class TpmMod{
         int tpmNum = 0, channel = 0, pin = 0;
         char pinPort = 'A';
 
+        void TPM0_IRQHandler();
+        void TPM1_IRQHandler();
+        void TPM2_IRQHandler();
+
     public:
+        volatile uint32_t pulse_counter = 0;
+        volatile uint32_t target_pulses = 0;
+
         void init(int tpmNum, int channel);
         void enablePort(char pinPort, int pin);
         void disable();
@@ -19,6 +26,10 @@ class TpmMod{
         void setModulo(int mod);
         void setPrescaler(int prescaler);
         void setChannelValue(int value);
+
+        void sendPulses(uint32_t numPulses);
+
+        bool available();
 
 };
 

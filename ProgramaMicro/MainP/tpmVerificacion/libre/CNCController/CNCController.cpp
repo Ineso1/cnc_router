@@ -29,7 +29,6 @@ void CNCController::setPinZ(char pinPort, int pin, char directionPort, int direc
 void CNCController::moveX(float distance) {
     motorZ.quitTpm();
     motorY.quitTpm();
-    motorX.quitTpm();
     motorX.move_mm(distance);  // Pass nullptr for unused axes
 }
 
@@ -39,7 +38,6 @@ void CNCController::moveX(float distance) {
  */
 void CNCController::moveY(float distance) {
     motorZ.quitTpm();
-    motorY.quitTpm();
     motorX.quitTpm();
     motorY.move_mm(distance);  // Pass nullptr for unused axes
 }
@@ -49,7 +47,6 @@ void CNCController::moveY(float distance) {
  * @param distance The distance to move in millimeters.
  */
 void CNCController::moveZ(float distance) {
-    motorZ.quitTpm();
     motorY.quitTpm();
     motorX.quitTpm();
     motorZ.move_mm(distance);  // Pass nullptr for unused axes
@@ -65,11 +62,16 @@ int CNCController::maxStep(int a, int b, int c) {
   }
 }
 
-
 void CNCController::moveTo(float x, float y, float z){
+    __enable_irq();
+
     motorX.useTpm();
     motorY.useTpm();
     motorZ.useTpm();
+
+    motorX.clrPulseCounter();
+    motorY.clrPulseCounter();
+    motorZ.clrPulseCounter();
 
     // Calculate the number of steps required to reach the target position
     int stepsX = motorX.calculateSteps_mm(x);
@@ -93,42 +95,53 @@ void CNCController::moveTo(float x, float y, float z){
     // Find the maximum number of steps among all motors
     int maxSteps = maxStep(stepsX, stepsY, stepsZ);
 
-    // // Calculate the prescaler and compare values based on the maximum steps
-    uint16_t prescalerX = calculatePrescaler(stepsX, maxSteps);
-    uint16_t compareX = calculateCompareValue(stepsX, maxSteps, prescalerX);
-    uint16_t prescalerY = calculatePrescaler(stepsY, maxSteps);
-    uint16_t compareY = calculateCompareValue(stepsY, maxSteps, prescalerY);
-    uint16_t prescalerZ = calculatePrescaler(stepsZ, maxSteps);
-    uint16_t compareZ = calculateCompareValue(stepsZ, maxSteps, prescalerZ);
+    // // Calculate the module and compare values based on the maximum steps
+    uint16_t compareX = calculateCompareValue(stepsX, maxSteps);
+    uint16_t compareY = calculateCompareValue(stepsY, maxSteps);
+    uint16_t compareZ = calculateCompareValue(stepsZ, maxSteps);
     
+    motorX.setPulsesTarget(10);
+    motorY.setPulsesTarget(10);
+    motorZ.setPulsesTarget(10);
+
     // Set the prescaler and compare values for each TPM (Timer/Counter)
-    setPrescalerCompare(prescalerX, compareX, prescalerY, compareY, prescalerZ, compareZ);
+    setPrescalerCompare(compareX, compareY, compareZ);
 
     // Enable TPMs
     motorX.enableTpm();
     motorY.enableTpm();
     motorZ.enableTpm();
+
+    while (!(motorX.tpmProcess() && motorY.tpmProcess() && motorZ.tpmProcess())) {}
+    motorX.quitTpm();
+    motorY.quitTpm();
+    motorZ.quitTpm();
+
+    motorX.clrPulseCounter();
+    motorY.clrPulseCounter();
+    motorZ.clrPulseCounter();
+
+    __disable_irq();
 }
 
-void CNCController::setPrescalerCompare(uint16_t prescalerX, uint16_t compareX, uint16_t prescalerY, uint16_t compareY, uint16_t prescalerZ, uint16_t compareZ) {
+void CNCController::setPrescalerCompare( uint16_t compareX, uint16_t compareY, uint16_t compareZ) {
   // Configure the TPM module with the specified prescaler and compare value
-    motorX.setTpmMod(16);
-    motorY.setTpmMod(16);
-    motorZ.setTpmMod(16);
+    motorX.setTpmPrescaler(128);
+    motorY.setTpmPrescaler(128);
+    motorZ.setTpmPrescaler(128);
 
-    motorX.setChValue(13003);
-    motorX.setChValue(13003);
-    motorX.setChValue(13003);
+    motorX.setChValue(30000);
+    motorY.setChValue(30000);
+    motorZ.setChValue(30000);
 
-
-    motorX.setTpmMod(43703);
-    motorY.setTpmMod(43703);
-    motorZ.setTpmMod(43703);
+    motorX.setTpmMod(60000);
+    motorY.setTpmMod(60000);
+    motorZ.setTpmMod(60000);
 
 }
 
 // Function to calculate the compare value based on the number of steps, maximum steps, and prescaler
-int CNCController::calculateCompareValue(int steps, int maxSteps, int prescaler) {
+int CNCController::calculateCompareValue(int steps, int maxSteps) {
     // Calculate the desired number of pulses per step
     int pulsesPerStep = 1000; // Adjust this value based on the requirements
 
@@ -136,7 +149,7 @@ int CNCController::calculateCompareValue(int steps, int maxSteps, int prescaler)
     int maxCounter = 0xFFFF; // Assuming 16-bit TPM
 
     // Calculate the counter value
-    int counter = (steps * pulsesPerStep * prescaler) / (maxSteps + 1);
+    int counter = (steps * pulsesPerStep) / (maxSteps + 1);
 
     // Adjust the counter value to fit within the valid range
     if (counter > maxCounter) {
@@ -146,44 +159,5 @@ int CNCController::calculateCompareValue(int steps, int maxSteps, int prescaler)
     }
 
     return counter;
-}
-
-// Function to calculate the prescaler value based on the number of steps, maximum steps, and delay
-int CNCController::calculatePrescaler(int steps, int maxSteps, int delay) {
-    float timePerStep = delay / 1000.0f; // Convert delay to seconds
-    float maxTime = timePerStep * maxSteps;
-    float prescalerFloat = maxTime / steps / 0.00000004f; // Assuming 80 MHz system clock
-    int prescaler = round(prescalerFloat);
-
-    // Ensure the prescaler value is within the valid range
-    if (prescaler < 0) {
-        prescaler = 0;
-    } else if (prescaler > 7) {
-        prescaler = 7;
-    }
-
-    return prescaler;
-}
-
-// Function to calculate the prescaler value based on the number of steps and maximum steps
-int CNCController::calculatePrescaler(int steps, int maxSteps) {
-    
-    // Calculate the desired number of pulses per step
-    int pulsesPerStep = 1000; // Adjust this value based on the requirements
-
-    // Calculate the maximum counter value for the TPM
-    int maxCounter = 0xFFFF; // Assuming 16-bit TPM
-
-    // Calculate the prescaler value
-    int prescaler = (steps * pulsesPerStep) / (maxSteps + 1);
-
-    // Adjust the prescaler to fit within the valid range
-    if (prescaler > maxCounter) {
-        prescaler = maxCounter;
-    } else if (prescaler < 1) {
-        prescaler = 1;
-    }
-
-    return prescaler;
 }
 

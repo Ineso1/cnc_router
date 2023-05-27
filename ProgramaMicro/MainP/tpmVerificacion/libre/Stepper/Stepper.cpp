@@ -352,3 +352,24 @@ void Stepper::setChValue(int value){
 void Stepper::setTpmPrescaler(int prescaler){
     tpm.setPrescaler(prescaler);
 }
+
+
+void Stepper::clrPulseCounter(){
+    tpm.pulse_counter = 0;
+}
+
+void Stepper::addPulseCounter(){
+    tpm.pulse_counter++ ;
+}
+
+int Stepper::getPulseCounter(){
+    return tpm.pulse_counter;
+}
+
+void Stepper::setPulsesTarget(int stepsNum){
+    tpm.target_pulses = stepsNum;
+}
+
+bool Stepper::tpmProcess(){
+    return tpm.available();
+}

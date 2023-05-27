@@ -21,9 +21,7 @@ class CNCController{
         int stopSwitchZ;
 
         int maxStep(int a, int b, int c);
-        int calculatePrescaler(int steps, int maxSteps);
-        int calculatePrescaler(int steps, int maxSteps, int delay);
-        int calculateCompareValue(int steps, int maxSteps, int prescaler);
+        int calculateCompareValue(int steps, int maxSteps);
 
     public:
         CNCController();
@@ -37,7 +35,7 @@ class CNCController{
 
         void moveTo(float x, float y, float z);
 
-        void setPrescalerCompare(uint16_t prescalerX, uint16_t compareX, uint16_t prescalerY, uint16_t compareY, uint16_t prescalerZ, uint16_t compareZ);
+        void setPrescalerCompare( uint16_t compareX, uint16_t compareY, uint16_t compareZ);
 };
 
 #endif // CNCCONTROLLER_H

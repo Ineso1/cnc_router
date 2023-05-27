@@ -46,6 +46,13 @@ class Stepper{
 
         void enableTpm();
 
+        void clrPulseCounter();
+        void addPulseCounter();
+        int getPulseCounter();
+        void setPulsesTarget(int stepsNum);
+
+        bool tpmProcess();
+
     private:
         void positiveDirection();
         void negativeDirection();

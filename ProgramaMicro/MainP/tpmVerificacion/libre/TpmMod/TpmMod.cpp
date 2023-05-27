@@ -4,26 +4,73 @@ void TpmMod::init(int tpmNum, int channel){
     this->tpmNum = tpmNum;
     this->channel = channel;
     SIM->SOPT2 |= 0x01000000;
-
+    __disable_irq();
     switch (tpmNum) {
     case 0:
         SIM->SCGC6 |= SIM_SCGC6_TPM0_MASK;  // Enable TPM0 clock
         TPM0->SC = 0;
+        NVIC_SetPriority(TPM0_IRQn, 2);       // priority of TPM0 interruption
+        NVIC_EnableIRQ(TPM0_IRQn);             // enable TPM0 interruption
 
         break;
     case 1:
         SIM->SCGC6 |= SIM_SCGC6_TPM1_MASK;  // Enable TPM1 clock
         TPM1->SC = 0;
+        NVIC_SetPriority(TPM1_IRQn, 2);       // priority of TPM1 interruption
+        NVIC_EnableIRQ(TPM1_IRQn);             // enable TPM1 interruption
+
         break;
     case 2:
         SIM->SCGC6 |= SIM_SCGC6_TPM2_MASK;  // Enable TPM1 clock
         TPM2->SC = 0;
+        NVIC_SetPriority(TPM2_IRQn, 2);       // priority of TPM2 interruption
+        NVIC_EnableIRQ(TPM2_IRQn);             // enable TPM2 interruption
+
         break;
     default:
         break;
     }
     setPrescaler(128);
+}
 
+void TpmMod::TPM0_IRQHandler(){
+    TPM0->SC |= TPM_SC_TOF_MASK; // Clear TPM0 overflow flag
+    pulse_counter++;
+    // Finish sending pulses for TPM0
+    TPM0->SC &= ~TPM_SC_TOIE_MASK; // Disable TPM0 overflow interrupt
+}
+
+void TpmMod::TPM1_IRQHandler(){
+    TPM1->SC |= TPM_SC_TOF_MASK; // Clear TPM1 overflow flag
+    pulse_counter++;
+    // Finish sending pulses for TPM1
+    TPM1->SC &= ~TPM_SC_TOIE_MASK; // Disable TPM1 overflow interrupt
+}
+
+void TpmMod::TPM2_IRQHandler(){
+    TPM2->SC |= TPM_SC_TOF_MASK; // Clear TPM2 overflow flag
+    pulse_counter++;
+    // Finish sending pulses for TPM2
+    TPM2->SC &= ~TPM_SC_TOIE_MASK; // Disable TPM2 overflow interrupt
+}
+
+void TpmMod::sendPulses(uint32_t numPulses)
+{
+
+    pulse_counter = 0;
+    target_pulses = numPulses;
+
+    TPM0->SC |= TPM_SC_TOIE_MASK; // Enable TPM0 overflow interrupt
+
+    while (pulse_counter < target_pulses)
+    {   /* Wait until all pulses are sent*/   }
+
+    // Wait until TPM0, TPM1, TPM2 finish
+    while ((TPM0->SC & TPM_SC_TOF_MASK) || (TPM1->SC & TPM_SC_TOF_MASK) || (TPM2->SC & TPM_SC_TOF_MASK)) 
+    {    /* Wait until all TPMs finish*/    }
+
+    // Finish sending pulses
+    TPM0->SC &= ~TPM_SC_TOIE_MASK; // Disable TPM0 overflow interrupt
 }
 
 void TpmMod::enablePort(char pinPort, int pin){
@@ -194,6 +241,23 @@ void TpmMod::setChannelValue(int value){
             TPM2->CONTROLS[channel].CnV = value;
             break;
         default:
+            break;
+        }
+}
+
+bool TpmMod::available(){
+    switch (tpmNum) {
+        case 0:
+            return TPM0->SC & TPM_SC_TOF_MASK && !(pulse_counter == target_pulses);
+            break;
+        case 1:
+            return TPM1->SC & TPM_SC_TOF_MASK && !(pulse_counter == target_pulses);
+            break;
+        case 2:
+            return TPM2->SC & TPM_SC_TOF_MASK && !(pulse_counter == target_pulses);
+            break;
+        default:
+            return false;
             break;
         }
 }
