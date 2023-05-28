@@ -23,6 +23,31 @@ void CNCController::setPinZ(char pinPort, int pin, char directionPort, int direc
     stopSwitchZ = stopSwitch;
 }
 
+
+int CNCController::maxStep(int a, int b, int c) {
+  if (a >= b && a >= c) {
+    return a;
+  } else if (b >= a && b >= c) {
+    return b;
+  } else {
+    return c;
+  }
+}
+
+void CNCController::calculateModuleAndChannelValues(int prescaler, float pulseDuration, float minDelayBetween, int maxSteps, uint16_t& moduleValue, uint16_t& channelValue) {
+    
+    float frequency = 41940000;
+
+    // Calculate the pulse frequency
+    float timeInstruction = maxSteps * (pulseDuration + minDelayBetween);  // Convert pulse duration to seconds
+
+    // Calculate the module value
+    moduleValue = static_cast<uint32_t>(std::round( timeInstruction * ( frequency / prescaler)));
+
+    // Calculate the channel value
+    channelValue = ((frequency * pulseDuration ) / prescaler);
+}
+
 /**
  * @brief Move the CNC along the X-axis by a specified distance.
  * @param distance The distance to move in millimeters.
@@ -51,16 +76,6 @@ void CNCController::moveZ(float distance) {
     motorY.quitTpm();
     motorX.quitTpm();
     motorZ.move_mm(distance);  // Pass nullptr for unused axes
-}
-
-int CNCController::maxStep(int a, int b, int c) {
-  if (a >= b && a >= c) {
-    return a;
-  } else if (b >= a && b >= c) {
-    return b;
-  } else {
-    return c;
-  }
 }
 
 void CNCController::moveTo(float x, float y, float z){
@@ -115,24 +130,146 @@ void CNCController::moveTo(float x, float y, float z){
 
 }
 
-void CNCController::setPrescalerCompare( uint16_t compareX, uint16_t compareY, uint16_t compareZ) {
-  // Configure the TPM module with the specified prescaler and compare value
-    // motorX.setTpmPrescaler(128);
-    // motorY.setTpmPrescaler(128);
-    // motorZ.setTpmPrescaler(128);
+/*---------------------------------------------------------------------------Pendientes---------------------------------------------------------------------------*/
 
+/**
+ * @brief Initialize the stop switches for auto homing.
+ */
+void CNCController::initStopSwitches() {
+    // Function implementation
 }
 
-void CNCController::calculateModuleAndChannelValues(int prescaler, float pulseDuration, float minDelayBetween, int maxSteps, uint16_t& moduleValue, uint16_t& channelValue) {
-    
-    float frequency = 41940000;
 
-    // Calculate the pulse frequency
-    float timeInstruction = maxSteps * (pulseDuration + minDelayBetween);  // Convert pulse duration to seconds
+/**
+ * @brief Calculate the radius of an arc given the center and endpoint coordinates.
+ * @param centerX The X-coordinate of the center point of the arc.
+ * @param centerY The Y-coordinate of the center point of the arc.
+ * @param endX The X-coordinate of the endpoint of the arc.
+ * @param endY The Y-coordinate of the endpoint of the arc.
+ * @return The radius of the arc.
+ */
+/*---------------------------------------------------------------------------------------------
+Calculates the radius of an arc based on the center point and the endpoint.
+Parameters:
+centerX (float): X-coordinate of the center point.
+centerY (float): Y-coordinate of the center point.
+endX (float): X-coordinate of the endpoint.
+endY (float): Y-coordinate of the endpoint.
 
-    // Calculate the module value
-    moduleValue = static_cast<uint32_t>(std::round( timeInstruction * ( frequency / prescaler)));
+Returns:
+radius (float): The calculated radius of the arc.
 
-    // Calculate the channel value
-    channelValue = ((frequency * pulseDuration ) / prescaler);
+Formula:
+radius = sqrt((endX - centerX)^2 + (endY - centerY)^2)
+---------------------------------------------------------------------------------------------*/
+float CNCController::calculateRadius(float centerX, float centerY, float endX, float endY) {
+    float dx = endX - centerX;
+    float dy = endY - centerY;
+    return sqrt(dx * dx + dy * dy);
+}
+
+/**
+ * @brief Calculate the angle between a point on the arc and the center point.
+ * @param centerX The X-coordinate of the center point of the arc.
+ * @param centerY The Y-coordinate of the center point of the arc.
+ * @param x The X-coordinate of a point on the arc.
+ * @param y The Y-coordinate of a point on the arc.
+ * @param radius The radius of the arc.
+ * @return The angle in radians.
+ */
+/*---------------------------------------------------------------------------------------------
+Calculates the angle between a point and the center of an arc.
+Parameters:
+centerX (float): X-coordinate of the center point.
+centerY (float): Y-coordinate of the center point.
+x (float): X-coordinate of the point.
+y (float): Y-coordinate of the point.
+radius (float): Radius of the arc.
+Returns:
+angle (float): The calculated angle between the point and the center of the arc.
+Formula:
+angle = atan2(y - centerY, x - centerX) * radius
+---------------------------------------------------------------------------------------------*/
+float CNCController::calculateAngle(float centerX, float centerY, float x, float y, float radius) {
+    float dx = x - centerX;
+    float dy = y - centerY;
+    return atan2(dy, dx) * radius;
+}
+
+/**
+ * @brief Move the CNC in an arc from the start point to the end point.
+ * @param centerX The X-coordinate of the center point of the arc.
+ * @param centerY The Y-coordinate of the center point of the arc.
+ * @param endX The X-coordinate of the endpoint of the arc.
+ * @param endY The Y-coordinate of the endpoint of the arc.
+ * @param isClockwise Set to true for a clockwise arc, false for a counterclockwise arc.
+ */
+/*---------------------------------------------------------------------------------------------
+Description: Moves the motors in an arc from the current position to the specified endpoint.
+Parameters:
+centerX (float): X-coordinate of the center point of the arc.
+centerY (float): Y-coordinate of the center point of the arc.
+endX (float): X-coordinate of the endpoint of the arc.
+endY (float): Y-coordinate of the endpoint of the arc.
+isClockwise (bool): Flag indicating whether the arc should be traversed in a clockwise direction.
+Returns: None
+Formula:
+The function internally uses the calculateRadius and calculateAngle functions to determine the radius and angle of the arc.
+It then iteratively calculates the intermediate positions along the arc using the calculated angle and moves the motors to those positions using the moveX and moveY functions.
+---------------------------------------------------------------------------------------------*/
+void CNCController::moveArc(float centerX, float centerY, float endX, float endY, bool isClockwise) {
+    float radius = calculateRadius(centerX, centerY, endX, endY);
+    float startAngle = calculateAngle(centerX, centerY, motorX.getPosition(), motorY.getPosition(), radius);
+    float endAngle = calculateAngle(centerX, centerY, endX, endY, radius);
+    float angleStep = isClockwise ? -0.1f : 0.1f;  // Adjust the angle step size according to your needs
+
+    for (float angle = startAngle; isClockwise ? angle > endAngle : angle < endAngle; angle += angleStep) {
+        float x = centerX + radius * cos(angle);
+        float y = centerY + radius * sin(angle);
+
+        // Move the motors to the calculated position
+        moveX(x);
+        moveY(y);
+    }
+
+    // Move the motors to the final position
+    moveX(endX);
+    moveY(endY);
+}
+
+void CNCController::home() {
+    // Move motor X towards the home position until the stop switch is pressed
+    while (!isXStopSwitchPressed()) {
+        moveX(-0.1f);  // Adjust the distance and direction 
+    }
+    motorXPosition = 0.0f;
+
+    // Move motor Y towards the home position until the stop switch is pressed
+    while (!isYStopSwitchPressed()) {
+        moveY(-0.1f);  // Adjust the distance and direction 
+    }
+    motorYPosition = 0.0f;
+
+    // Move motor Z towards the home position until the stop switch is pressed
+    while (!isZStopSwitchPressed()) {
+        moveZ(-0.1f);  // Adjust the distance and direction 
+    }
+    motorZPosition = 0.0f;
+}
+
+void CNCController::setRelativePosition(float x, float y, float z) {
+    motorXPosition += x;
+    motorYPosition += y;
+    motorZPosition += z;
+}
+
+
+bool CNCController::isXStopSwitchPressed(){
+    return true;
+}
+bool CNCController::isYStopSwitchPressed(){
+    return true;
+}
+bool CNCController::isZStopSwitchPressed(){
+    return true;
 }

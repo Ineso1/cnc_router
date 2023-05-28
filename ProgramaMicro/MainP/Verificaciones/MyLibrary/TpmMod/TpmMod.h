@@ -2,6 +2,7 @@
 #define TPMMOD_H
 
 #include <MKL25Z4.h>
+#include "MklTime.h"
 
 class TpmMod{
 
@@ -10,7 +11,15 @@ class TpmMod{
         int tpmNum = 0, channel = 0, pin = 0;
         char pinPort = 'A';
 
+        void TPM_IRQHandler();
+        void tpm0Config();
+        void tpm1Config();
+        void tpm2Config();
+
     public:
+        volatile uint32_t pulse_counter = 0;
+        volatile uint32_t target_pulses = 10;
+
         void init(int tpmNum, int channel);
         void enablePort(char pinPort, int pin);
         void disable();
@@ -19,6 +28,10 @@ class TpmMod{
         void setModulo(int mod);
         void setPrescaler(int prescaler);
         void setChannelValue(int value);
+
+        void sendPulses(uint32_t numPulses);
+
+        bool available();
 
 };
 

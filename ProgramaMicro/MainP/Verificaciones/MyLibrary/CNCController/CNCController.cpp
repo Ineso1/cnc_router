@@ -1,61 +1,60 @@
 #include "CNCController.h"
+#include <string>
 
 CNCController::CNCController() {
     // Initialize position variables
     motorXPosition = 0;
     motorYPosition = 0;
     motorZPosition = 0;
-    configureTPM();
 }
 
-void CNCController::setPinX(char pinPort, int pin, char directionPort, int direction, int steps, int radius, int stopSwitch){
-    motorX.setPins(pinPort, pin, directionPort, direction, steps, radius, 0);  // Example values, adjust according to your setup
+void CNCController::setPinX(char pinPort, int pin, char directionPort, int direction, int steps, int radius, int tpmN, int channel, int stopSwitch){
+    motorX.setPins(pinPort, pin, directionPort, direction, steps, radius, tpmN, channel);  // Example values, adjust according to your setup
     stopSwitchX = stopSwitch;
 }
 
-void CNCController::setPinY(char pinPort, int pin, char directionPort, int direction, int steps, int radius, int stopSwitch){
-    motorY.setPins(pinPort, pin, directionPort, direction, steps, radius, 1);  // Example values, adjust according to your setup
+void CNCController::setPinY(char pinPort, int pin, char directionPort, int direction, int steps, int radius, int tpmN, int channel, int stopSwitch){
+    motorY.setPins(pinPort, pin, directionPort, direction, steps, radius, tpmN, channel);  // Example values, adjust according to your setup
     stopSwitchY = stopSwitch;
 }
 
-void CNCController::setPinZ(char pinPort, int pin, char directionPort, int direction, int steps, int radius, int stopSwitch){
-    motorZ.setPins(pinPort, pin, directionPort, direction, steps, radius, 2);  // Example values, adjust according to your setup
+void CNCController::setPinZ(char pinPort, int pin, char directionPort, int direction, int steps, int radius, int tpmN, int channel, int stopSwitch){
+    motorZ.setPins(pinPort, pin, directionPort, direction, steps, radius, tpmN, channel);  // Example values, adjust according to your setup
     stopSwitchZ = stopSwitch;
 }
 
 
-/**
- * @brief Initialize the stop switches for auto homing.
- */
-void CNCController::initStopSwitches() {
-    // Function implementation
+int CNCController::maxStep(int a, int b, int c) {
+  if (a >= b && a >= c) {
+    return a;
+  } else if (b >= a && b >= c) {
+    return b;
+  } else {
+    return c;
+  }
 }
 
-/*Important!!!!!!!!!!*/
-//To define port???
-// bool CNCController::isXStopSwitchPressed() {
-//     // Read the status of the stop switch for motor X
-//     return (GPIO_ReadPinInput(GPIOX, stopSwitchX) == GPIO_PIN_LOW);
-// }
+void CNCController::calculateModuleAndChannelValues(int prescaler, float pulseDuration, float minDelayBetween, int maxSteps, uint16_t& moduleValue, uint16_t& channelValue) {
+    
+    float frequency = 41940000;
 
-// bool CNCController::isYStopSwitchPressed() {
-//     // Read the status of the stop switch for motor Y
-//     return (GPIO_ReadPinInput(GPIOX, stopSwitchY) == GPIO_PIN_LOW);
-// }
+    // Calculate the pulse frequency
+    float timeInstruction = maxSteps * (pulseDuration + minDelayBetween);  // Convert pulse duration to seconds
 
-// bool CNCController::isZStopSwitchPressed() {
-//     // Read the status of the stop switch for motor Z
-//     return (GPIO_ReadPinInput(GPIOX, stopSwitchZ) == GPIO_PIN_LOW);
-// }
+    // Calculate the module value
+    moduleValue = static_cast<uint32_t>(std::round( timeInstruction * ( frequency / prescaler)));
 
+    // Calculate the channel value
+    channelValue = ((frequency * pulseDuration ) / prescaler);
+}
 
 /**
  * @brief Move the CNC along the X-axis by a specified distance.
  * @param distance The distance to move in millimeters.
  */
 void CNCController::moveX(float distance) {
-    disableTPM();
     motorZ.quitTpm();
+    motorY.quitTpm();
     motorX.move_mm(distance);  // Pass nullptr for unused axes
 }
 
@@ -64,8 +63,8 @@ void CNCController::moveX(float distance) {
  * @param distance The distance to move in millimeters.
  */
 void CNCController::moveY(float distance) {
-    disableTPM();
     motorZ.quitTpm();
+    motorX.quitTpm();
     motorY.move_mm(distance);  // Pass nullptr for unused axes
 }
 
@@ -74,75 +73,70 @@ void CNCController::moveY(float distance) {
  * @param distance The distance to move in millimeters.
  */
 void CNCController::moveZ(float distance) {
-    disableTPM();
-    motorZ.quitTpm();
+    motorY.quitTpm();
+    motorX.quitTpm();
     motorZ.move_mm(distance);  // Pass nullptr for unused axes
 }
 
+void CNCController::moveTo(float x, float y, float z){
+    __disable_irq();
 
-/**
- * @brief Enable the TPM module to start making changes.
- */
-void CNCController::enableTPM() {
-    TPM0->SC |= TPM_SC_CMOD(1);  // Enable TPM0 counter
-    TPM1->SC |= TPM_SC_CMOD(1);
-    TPM2->SC |= TPM_SC_CMOD(1);
+    float pulseDuration = 0.0002;  // in milliseconds
+    float minDelayBetween = 0.0003;
+    int prescaler = 128;
+
+    // Calculate the number of steps required to reach the target position
+    int stepsX = motorX.calculateSteps_mm(x);
+    int stepsY = motorY.calculateSteps_mm(y);
+    int stepsZ = motorZ.calculateSteps_mm(z);
+ 
+    // Determine the direction for each motor based on the target position
+    int directionX = (stepsX >= 0) ? 1 : 0;
+    int directionY = (stepsY >= 0) ? 1 : 0;
+    int directionZ = (stepsZ >= 0) ? 1 : 0;
+
+    motorX.setDirection(directionX);
+    motorY.setDirection(directionY);
+    motorZ.setDirection(directionZ);
+
+    // Find the maximum number of steps among all motors
+    int maxSteps = maxStep(stepsX, stepsY, stepsZ);
+
+    uint16_t moduleValue, channelValue;
+
+    // // Calculate the module and compare values based on the maximum steps
+    calculateModuleAndChannelValues( prescaler, pulseDuration, minDelayBetween, maxSteps, moduleValue, channelValue);
+
+    uint32_t XmoduleValue, YmoduleValue, ZmoduleValue;
+    XmoduleValue = moduleValue * ( maxSteps / static_cast<float>(stepsX));
+    YmoduleValue = moduleValue * ( maxSteps / static_cast<float>(stepsY));
+    ZmoduleValue = moduleValue * ( maxSteps / static_cast<float>(stepsZ));
+
+    motorX.moveTo(x, XmoduleValue, channelValue, stepsX);
+    motorY.moveTo(y, YmoduleValue, channelValue, stepsY);
+    // motorX.moveTo(x, 0xFFFF, 10);
+    // motorY.moveTo(y, 0XFFFF/2, 20);
+    // motorZ.moveTo(z, 0XFFFF, 11);
+
+    // Set the module and compare values for each TPM (Timer/Counter)
+
+    __enable_irq();
+    // Enable TPMs
+    motorX.enableTpm();
+    motorY.enableTpm();
+    motorZ.enableTpm();
+
+    while (!(motorX.tpmProcess() && motorY.tpmProcess() && motorZ.tpmProcess())) {}
+
 }
 
-/**
- * @brief Disable the TPM module to stop making changes.
- */
-void CNCController::disableTPM() {
-    TPM0->SC &= ~TPM_SC_CMOD(1);  // Disable TPM0 counter
-    TPM1->SC &= ~TPM_SC_CMOD(1);
-    TPM2->SC &= ~TPM_SC_CMOD(1);
-}
+/*---------------------------------------------------------------------------Pendientes---------------------------------------------------------------------------*/
 
 /**
- * @brief Configure the TPM module for controlling the CNC motors.
+ * @brief Initialize the stop switches for auto homing.
  */
- /*---------------------------------------------------------------------------------------------
-MSB stands for Most Significant Bit, and ELSB stands for Edge or Level Select Bit.
-
-MSA and ELSA represent the bit positions for the MSB and ELSB in the TPM_CnSC register, respectively.
-
-The values 1:0 in MSB:MSA and ELSB:ELSA indicate the bit settings for the corresponding bits.
-
-1:0 means that both the MSB and ELSB bits are set to 1, indicating specific configurations for the TPM channel.
-
-In the context of the TPM module configuration, the specific values 1:0 for MSB:MSA and ELSB:ELSA usually correspond to the following settings:
-    *   MSB:MSA = 1:0: This configuration sets the TPM channel to use the TPM_CnV register in the center-aligned PWM mode.
-    *   ELSB:ELSA = 1:0: This configuration sets the TPM channel to output a low-true pulse (active low) on the PWM signal.
----------------------------------------------------------------------------------------------*/
-void CNCController::configureTPM() {
-    SIM->SCGC6 |= SIM_SCGC6_TPM0_MASK;  // Enable TPM0 clock
-    SIM->SCGC6 |= SIM_SCGC6_TPM1_MASK;  // Enable TPM1 clock
-    SIM->SCGC6 |= SIM_SCGC6_TPM2_MASK;  // Enable TPM1 clock
-
-    disableTPM();
-    TPM0->SC = TPM_SC_PS(7);  // Prescaler = 128
-    TPM0->MOD = 0xFFFF;       // Set the modulus to the maximum value
-    
-    TPM1->SC = TPM_SC_PS(7);  // Prescaler = 128
-    TPM1->MOD = 0xFFFF;       // Set the modulus to the maximum value
-
-    TPM2->SC = TPM_SC_PS(7);  // Prescaler = 128
-    TPM2->MOD = 0xFFFF;       // Set the modulus to the maximum value
-
-    // Configure TPM0 channel 0 as PWM output for motorX
-    TPM0->CONTROLS[0].CnSC = TPM_CnSC_MSB_MASK | TPM_CnSC_ELSB_MASK;  // Enable edge-aligned PWM mode (MSB:MSA = 1:0, ELSB:ELSA = 1:0)
-    TPM0->CONTROLS[0].CnV = 0;  // Set initial PWM value
-
-    // Configure TPM1 channel 0 as PWM output for motorY
-    TPM1->CONTROLS[1].CnSC = TPM_CnSC_MSB_MASK | TPM_CnSC_ELSB_MASK;  // Enable edge-aligned PWM mode (MSB:MSA = 1:0, ELSB:ELSA = 1:0)
-    TPM1->CONTROLS[1].CnV = 0;  // Set initial PWM value
-
-    // Configure TPM2 channel 0 as PWM output for motorZ
-    TPM2->CONTROLS[1].CnSC = TPM_CnSC_MSB_MASK | TPM_CnSC_ELSB_MASK;  // Enable edge-aligned PWM mode (MSB:MSA = 1:0, ELSB:ELSA = 1:0)
-    TPM2->CONTROLS[1].CnV = 0;  // Set initial PWM value
-
-    enableTPM();  // Enable TPM0 counter
-
+void CNCController::initStopSwitches() {
+    // Function implementation
 }
 
 
@@ -174,8 +168,6 @@ float CNCController::calculateRadius(float centerX, float centerY, float endX, f
     return sqrt(dx * dx + dy * dy);
 }
 
-
-
 /**
  * @brief Calculate the angle between a point on the arc and the center point.
  * @param centerX The X-coordinate of the center point of the arc.
@@ -203,8 +195,6 @@ float CNCController::calculateAngle(float centerX, float centerY, float x, float
     float dy = y - centerY;
     return atan2(dy, dx) * radius;
 }
-
-
 
 /**
  * @brief Move the CNC in an arc from the start point to the end point.
@@ -247,7 +237,6 @@ void CNCController::moveArc(float centerX, float centerY, float endX, float endY
     moveY(endY);
 }
 
-
 void CNCController::home() {
     // Move motor X towards the home position until the stop switch is pressed
     while (!isXStopSwitchPressed()) {
@@ -283,127 +272,4 @@ bool CNCController::isYStopSwitchPressed(){
 }
 bool CNCController::isZStopSwitchPressed(){
     return true;
-}
-
-void CNCController::moveTo(float x, float y, float z){
-    motorX.useTpm();
-    motorY.useTpm();
-    motorZ.useTpm();
-
-    // Calculate the number of steps required to reach the target position
-    int stepsX = motorX.calculateSteps_mm(x);
-    int stepsY = motorY.calculateSteps_mm(y);
-    int stepsZ = motorZ.calculateSteps_mm(z);
- 
-    // Determine the direction for each motor based on the target position
-    int directionX = (stepsX >= 0) ? 1 : -1;
-    int directionY = (stepsY >= 0) ? 1 : -1;
-    int directionZ = (stepsZ >= 0) ? 1 : -1;
-
-    // Calculate the absolute number of steps for each motor
-    stepsX = abs(stepsX);
-    stepsY = abs(stepsY);
-    stepsZ = abs(stepsZ);
-
-    // Find the maximum number of steps among all motors
-    int maxSteps = maxStep(stepsX, stepsY, stepsZ);
-
-    // Calculate the prescaler and compare values based on the maximum steps
-    uint16_t prescalerX = calculatePrescaler(stepsX, maxSteps);
-    uint16_t compareX = calculateCompareValue(stepsX, maxSteps, prescalerX);
-    uint16_t prescalerY = calculatePrescaler(stepsY, maxSteps);
-    uint16_t compareY = calculateCompareValue(stepsY, maxSteps, prescalerY);
-    uint16_t prescalerZ = calculatePrescaler(stepsZ, maxSteps);
-    uint16_t compareZ = calculateCompareValue(stepsZ, maxSteps, prescalerZ);
-    
-    // Set the prescaler and compare values for each TPM (Timer/Counter)
-    setPrescalerCompare(prescalerX, compareX, prescalerY, compareY, prescalerZ, compareZ);
-
-    // Enable TPMs
-    enableTPM();
-}
-
-
-// Function to calculate the prescaler value based on the number of steps and maximum steps
-int CNCController::calculatePrescaler(int steps, int maxSteps) {
-    
-    // Calculate the desired number of pulses per step
-    int pulsesPerStep = 1000; // Adjust this value based on the requirements
-
-    // Calculate the maximum counter value for the TPM
-    int maxCounter = 0xFFFF; // Assuming 16-bit TPM
-
-    // Calculate the prescaler value
-    int prescaler = (steps * pulsesPerStep) / (maxSteps + 1);
-
-    // Adjust the prescaler to fit within the valid range
-    if (prescaler > maxCounter) {
-        prescaler = maxCounter;
-    } else if (prescaler < 1) {
-        prescaler = 1;
-    }
-
-    return prescaler;
-}
-
-// Function to calculate the prescaler value based on the number of steps, maximum steps, and delay
-int CNCController::calculatePrescaler(int steps, int maxSteps, int delay) {
-    float timePerStep = delay / 1000.0f; // Convert delay to seconds
-    float maxTime = timePerStep * maxSteps;
-    float prescalerFloat = maxTime / steps / 0.00000004f; // Assuming 80 MHz system clock
-    int prescaler = round(prescalerFloat);
-
-    // Ensure the prescaler value is within the valid range
-    if (prescaler < 0) {
-        prescaler = 0;
-    } else if (prescaler > 7) {
-        prescaler = 7;
-    }
-
-    return prescaler;
-}
-
-
-// Function to calculate the compare value based on the number of steps, maximum steps, and prescaler
-int CNCController::calculateCompareValue(int steps, int maxSteps, int prescaler) {
-    // Calculate the desired number of pulses per step
-    int pulsesPerStep = 1000; // Adjust this value based on the requirements
-
-    // Calculate the maximum counter value for the TPM
-    int maxCounter = 0xFFFF; // Assuming 16-bit TPM
-
-    // Calculate the counter value
-    int counter = (steps * pulsesPerStep * prescaler) / (maxSteps + 1);
-
-    // Adjust the counter value to fit within the valid range
-    if (counter > maxCounter) {
-        counter = maxCounter;
-    } else if (counter < 1) {
-        counter = 1;
-    }
-
-    return counter;
-}
-
-int CNCController::maxStep(int a, int b, int c) {
-  if (a >= b && a >= c) {
-    return a;
-  } else if (b >= a && b >= c) {
-    return b;
-  } else {
-    return c;
-  }
-}
-
-
-void CNCController::setPrescalerCompare(uint16_t prescalerX, uint16_t compareX, uint16_t prescalerY, uint16_t compareY, uint16_t prescalerZ, uint16_t compareZ) {
-  // Configure the TPM module with the specified prescaler and compare value
-  TPM0->MOD = prescalerX;
-  TPM1->MOD = prescalerY;
-  TPM2->MOD = prescalerZ;
-
-  TPM0->CONTROLS[0].CnV = compareX;
-  TPM1->CONTROLS[0].CnV = compareY;
-  TPM2->CONTROLS[0].CnV = compareZ;
-
 }

@@ -26,18 +26,33 @@ class CNCController{
         Stepper motorY;
         Stepper motorZ;
 
+        /* Setting */
         CNCController();
         void setPinX(char pinPort, int pin, char enablePort, int enable, int steps, int radius, int tpmN, int channel, int stopSwitch);
         void setPinY(char pinPort, int pin, char enablePort, int enable, int steps, int radius, int tpmN, int channel, int stopSwitch);
         void setPinZ(char pinPort, int pin, char enablePort, int enable, int steps, int radius, int tpmN, int channel, int stopSwitch);
         
+        /* Motion */
         void moveX(float distance); 
         void moveY(float distance);
         void moveZ(float distance);
 
         void moveTo(float x, float y, float z);
 
-        void setPrescalerCompare( uint16_t compareX, uint16_t compareY, uint16_t compareZ);
+
+        /*Pendientes*/
+        void home();
+        void moveArc(float centerX, float centerY, float endX, float endY, bool isClockwise);
+        void setRelativePosition(float x, float y, float z);
+        void initStopSwitches();
+        bool isXStopSwitchPressed();
+        bool isYStopSwitchPressed();
+        bool isZStopSwitchPressed();
+        float calculateRadius(float centerX, float centerY, float endX, float endY);
+        float calculateAngle(float centerX, float centerY, float x, float y, float radius);
+
+
+
 };
 
 #endif // CNCCONTROLLER_H

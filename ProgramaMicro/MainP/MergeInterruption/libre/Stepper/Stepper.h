@@ -45,9 +45,9 @@ class Stepper{
         void moveTo(int target, int mod, int channelVal, int Npulses);
         
         /*Calculation*/
-        int calculatePeriod(int delayTime);
-        int calculatePulseDuration(int period);
-        int calculateSteps_mm(float distance);
+        int calculatePeriod(int delayTime);         //Pendiente de revison
+        int calculatePulseDuration(int period);     //Pendiente de revison
+        int calculateSteps_mm(float distance); 
 
     private:
         
