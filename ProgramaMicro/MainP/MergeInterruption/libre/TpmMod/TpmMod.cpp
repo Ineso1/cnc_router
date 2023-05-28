@@ -305,7 +305,7 @@ void TpmMod::setChannelValue(int value){
 }
 
 bool TpmMod::available() {
-    return pulse_counter >= target_pulses;
+    return pulse_counter + 1 >= target_pulses;
 }
 
 

@@ -114,9 +114,7 @@ void CNCController::moveTo(float x, float y, float z){
 
     motorX.moveTo(x, XmoduleValue, channelValue, stepsX);
     motorY.moveTo(y, YmoduleValue, channelValue, stepsY);
-    // motorX.moveTo(x, 0xFFFF, 10);
-    // motorY.moveTo(y, 0XFFFF/2, 20);
-    // motorZ.moveTo(z, 0XFFFF, 11);
+    motorZ.moveTo(z, YmoduleValue, channelValue, stepsZ);
 
     // Set the module and compare values for each TPM (Timer/Counter)
 
@@ -126,7 +124,7 @@ void CNCController::moveTo(float x, float y, float z){
     motorY.enableTpm();
     motorZ.enableTpm();
 
-    while (!(motorX.tpmProcess() && motorY.tpmProcess() && motorZ.tpmProcess())) {}
+    while (!(motorX.tpmProcess() & motorY.tpmProcess() & motorZ.tpmProcess())) {}
 
 }
 
