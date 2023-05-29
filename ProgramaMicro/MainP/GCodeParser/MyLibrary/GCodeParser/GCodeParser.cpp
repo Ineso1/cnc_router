@@ -1,12 +1,12 @@
 #include "GCodeParser.h"
+#include <string>
 
 GCodeParser::GCodeParser(){}
 
 // Function to extract GCode components
-void GCodeParser::extractGCodeComponents(const std::string& gcode, double &xValue, double &yValue, double &zValue, double &iValue, double &jValue, double &rValue) {
+void GCodeParser::extractGCodeComponents(const std::string& gcode, bool &g, std::string &gcodeNumber , double &xValue, double &yValue, double &zValue, double &iValue, double &jValue, double &rValue) {
     std::istringstream iss(gcode);
     std::string token;
-    std::string gcodeNumber;
     xValue = 0.0;
     yValue = 0.0;
     zValue = 0.0;
@@ -16,6 +16,7 @@ void GCodeParser::extractGCodeComponents(const std::string& gcode, double &xValu
 
     while (iss >> token) {
         if (token[0] == 'G') {
+            g = true;
             gcodeNumber = token.substr(1);
         } else if (token[0] == 'X') {
             xValue = std::stod(token.substr(1));

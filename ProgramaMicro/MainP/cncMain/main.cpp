@@ -4,16 +4,17 @@
 #include "UartCom.h"
 #include "MklTime.h"
 #include "KeyPad.h"
+#include "CNCController.h"
+#include "GCodeParser.h"
 #include <string>
 #include <cstring>
 #include <cstdlib>
-#include "Stepper.h"
 
 LcdDisp Lcd;
 Uart Serial;
 KeyPad Pad;
-Stepper motorx;
-    
+CNCController Control;
+GCodeParser Parser;
 
 enum State {
     STATE_MENU,
@@ -22,15 +23,24 @@ enum State {
     STATE_START
 };
 
+
+void clearRgb(){
+    PTD->PDOR &= ~0x02; /* clr blue LED */
+    PTB->PDOR &= ~0x40000; /* clr red LED */
+    PTB->PDOR &= ~0x80000; /* clr green LED */
+}
+
+
 void setup(){
     Lcd.lcdInit();
     Serial.init();
     Pad.init();
-
+    Control.setPinX('C', 1, 'C', 2, 2000, 10, 0, 0, 1);
+    Control.setPinY('B', 1, 'B', 0, 2000, 10, 1, 1, 2);
+    Control.setPinZ('B', 3, 'B', 2, 2000, 10, 2, 1, 3);
     Lcd.lcdPrint("Iniciando...");
     delay_ms(5000);
     Lcd.lcdClear();
-    motorx.setPins(30, 29, 200, 50);
 }
 
 
@@ -56,7 +66,7 @@ void Config(){
     Lcd.lcdPrint("Configuration");
 
     delay_ms(2000);
-    motorx.move_mm(500.5);
+    Control.moveX(1);
     while (!Pad.getKey() && !Serial.available()){}
     delay_ms(2);
 }
@@ -83,7 +93,25 @@ void ProcessGCodeLine(const std::string& gcodeLine) {
     Lcd.lcdClear();
     // Serial.sendString(gcodeLine);
     Lcd.lcdPrint(gcodeLine);
-    // delay_ms(5000);
+    double Xcode, Ycode, Zcode, Icode, Jcode, Rcode;
+    std::string gcodeNumber;
+    bool g;
+    delay_ms(2000);
+    Lcd.lcdClear();
+    Parser.extractGCodeComponents(gcodeLine, g, gcodeNumber, Xcode, Ycode, Zcode, Icode, Jcode, Rcode); 
+    if (gcodeLine == "0") {
+        Lcd.lcdPrint("G0");
+    } else if (gcodeLine == "1") {
+        Lcd.lcdPrint("G1");
+    }else if (gcodeLine == "2") {
+        Lcd.lcdPrint("G2");
+    } else if (gcodeLine == "3") {
+        Lcd.lcdPrint("G3");
+    }
+    else {
+        Lcd.lcdPrint("?");
+    }  
+    delay_ms(5000);
 }
 
 void Start(){
@@ -126,13 +154,14 @@ void Start(){
 
 int main()
 {
+
     setup();
     float xCoord = 0, yCoord = 0, zCoord = 0;
     char coordType[] = "absolute";
     char op_c = ' ';
     char op_s = ' ';
     State mainState = STATE_MENU;
-
+    
     while (true) {
         op_c = Pad.getKey();
         if (Serial.available()) {
@@ -208,5 +237,63 @@ int main()
             break;
         }
 
+    }
+}
+
+
+extern "C" void TPM0_IRQHandler() {
+
+    if (TPM0->SC & TPM_SC_TOF_MASK)
+    {
+        TPM0->SC |= TPM_SC_TOF_MASK; // Clear TPM0 overflow flag
+
+        Control.motorX.addPulseCounter();
+
+        if (Control.motorX.getPulseTarget() <= Control.motorX.getPulseCounter()) {
+                Control.motorX.substractPulseCounter();
+                Control.motorX.setChValue(0);
+        }
+        else {
+        PTB->PTOR = 0x80000; /* toggle green LED */
+            // delay_ms(1000);
+        }
+    }
+}
+
+extern "C" void TPM1_IRQHandler() {
+
+    if (TPM1->SC & TPM_SC_TOF_MASK)
+    {
+        TPM1->SC |= TPM_SC_TOF_MASK; // Clear TPM0 overflow flag
+
+        Control.motorY.addPulseCounter();
+
+        if (Control.motorY.getPulseTarget() <= Control.motorY.getPulseCounter()) {
+            Control.motorY.substractPulseCounter();
+            Control.motorY.setChValue(0);
+        }
+        else {
+        PTB->PTOR = 0x40000; /* toggle red LED */
+            // delay_ms(1000);
+        }
+    }
+}
+
+extern "C" void TPM2_IRQHandler() {
+    
+    if (TPM2->SC & TPM_SC_TOF_MASK)
+    {
+        TPM2->SC |= TPM_SC_TOF_MASK; // Clear TPM0 overflow flag
+
+        Control.motorZ.addPulseCounter();
+
+        if (Control.motorZ.getPulseTarget() <= Control.motorZ.getPulseCounter()) {
+            Control.motorZ.substractPulseCounter();
+            Control.motorZ.setChValue(0);
+        }
+        else {
+        PTD->PTOR = 0x02; /* toggle blue LED */
+            // delay_ms(1000);
+        }
     }
 }

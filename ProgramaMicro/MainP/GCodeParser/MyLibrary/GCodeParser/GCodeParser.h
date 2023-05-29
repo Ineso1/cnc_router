@@ -11,7 +11,7 @@
 class GCodeParser{
     public:
     GCodeParser();
-    void extractGCodeComponents(const std::string& gcode, double &xValue, double &yValue, double &zValue, double &iValue, double &jValue, double &rValue);
+    void extractGCodeComponents(const std::string& gcode, bool &g, std::string &gcodeNumber, double &xValue, double &yValue, double &zValue, double &iValue, double &jValue, double &rValue);
     void doubleToCharArray(double value, char* buffer);
 };
 
