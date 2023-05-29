@@ -133,6 +133,26 @@
 #include <iomanip>
 #include <string.h>
 
+void doubleToCharArray(double value, char* buffer) {
+    std::string s{std::to_string(value)};
+    int i = 0;
+    for (int i = 0; i < sizeof(s); i++)
+    {
+        buffer[i] = s[i];
+        i++;
+    }
+}
+
+void doubleToCharArray(double value, char* buffer, int bufferSize) {
+    std::string s{std::to_string(value)};
+    int i = 0;
+    for (const auto& c : s)
+    {
+        buffer[i] = c;
+        i++;
+    }
+}
+
 // Function to extract GCode components
 void extractGCodeComponents(const std::string& gcode) {
     std::istringstream iss(gcode);
@@ -178,13 +198,13 @@ void extractGCodeComponents(const std::string& gcode) {
     }
 
     char buffer[sizeof(xValue)];
-    *(double*)buffer = xValue;
+    doubleToCharArray(xValue, buffer);
 
     std::cout << "prueba: " << buffer;
 }
 
 int main() {
-    std::string gcode = "G1 X1234567890.123456789 Y9876543210.987654321 Z12345.67890";
+    std::string gcode = "G3 X1234567890.123456789 Y9876543210.987654321 Z12345.67890";
     extractGCodeComponents(gcode);
     return 0;
 }

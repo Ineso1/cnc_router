@@ -20,7 +20,7 @@ int main()
     Lcd.lcdClear();
 
     char buffer[50];
-    Parser.doubleToCharArray( (float)Xcode, buffer, sizeof(buffer));
+    Parser.doubleToCharArray( Xcode, buffer);
 
     Lcd.lcdPrint(buffer);
     while (true) {
