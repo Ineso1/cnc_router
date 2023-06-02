@@ -1,4 +1,5 @@
 #include "CNCController.h"
+#include <cstdint>
 #include <string>
 
 CNCController::CNCController() {
@@ -6,6 +7,7 @@ CNCController::CNCController() {
     motorXPosition = 0;
     motorYPosition = 0;
     motorZPosition = 0;
+    Serial.init();
 }
 
 void CNCController::setPinX(char pinPort, int pin, char directionPort, int direction, int steps, int radius, int tpmN, int channel, int stopSwitch){
@@ -34,15 +36,17 @@ int CNCController::maxStep(int a, int b, int c) {
   }
 }
 
-void CNCController::calculateModuleAndChannelValues(int prescaler, float pulseDuration, float minDelayBetween, int maxSteps, uint16_t& moduleValue, uint16_t& channelValue) {
+void CNCController::calculateModuleAndChannelValues(int prescaler, float pulseDuration, float minDelayBetween, int maxSteps, float& moduleValue, uint16_t& channelValue) {
     
-    float frequency = 41940000;
+    // int frequency = 41940000;
+    int frequency = 8'000'000;
+
 
     // Calculate the pulse frequency
-    float timeInstruction = maxSteps * (pulseDuration + minDelayBetween);  // Convert pulse duration to seconds
+    double timeInstruction = maxSteps * (pulseDuration + minDelayBetween);  // Convert pulse duration to seconds
 
     // Calculate the module value
-    moduleValue = static_cast<uint32_t>(std::round( timeInstruction * ( frequency / prescaler)));
+    moduleValue =  ((timeInstruction *  frequency) / prescaler);
 
     // Calculate the channel value
     channelValue = ((frequency * pulseDuration ) / prescaler);
@@ -81,9 +85,20 @@ void CNCController::moveZ(float distance) {
 void CNCController::moveTo(float x, float y, float z){
     __disable_irq();
 
-    float pulseDuration = 0.0002;  // in milliseconds
-    float minDelayBetween = 0.0003;
+    float pulseDuration = 0.0003;  // in milliseconds
+    float minDelayBetween = 0.0004;
     int prescaler = 128;
+
+
+    this->x_up_duration = (200e-6);
+    this->y_up_duration = (200e-6);
+    this->z_up_duration = (200e-6);
+
+    this->x_dw_duration = (300e-6);
+    this->y_dw_duration = (300e-6);
+    this->z_dw_duration = (300e-6);
+
+
 
     // Calculate the number of steps required to reach the target position
     int stepsX = motorX.calculateSteps_mm(x);
@@ -101,20 +116,47 @@ void CNCController::moveTo(float x, float y, float z){
 
     // Find the maximum number of steps among all motors
     int maxSteps = maxStep(stepsX, stepsY, stepsZ);
+    float moduleValue;
+    uint16_t channelValue;
 
-    uint16_t moduleValue, channelValue;
-
+    channelValue = ((clk_frequen * pulseDuration ) / prescaler);
     // // Calculate the module and compare values based on the maximum steps
     calculateModuleAndChannelValues( prescaler, pulseDuration, minDelayBetween, maxSteps, moduleValue, channelValue);
 
+    // int XmoduleValue = x_number_operations(x_up_duration , x_dw_duration);
+    // int YmoduleValue =  y_number_operations(y_up_duration , y_dw_duration);
+    // int ZmoduleValue = z_number_operations(z_up_duration , z_dw_duration);
+
     uint32_t XmoduleValue, YmoduleValue, ZmoduleValue;
-    XmoduleValue = moduleValue * ( maxSteps / static_cast<float>(stepsX));
-    YmoduleValue = moduleValue * ( maxSteps / static_cast<float>(stepsY));
-    ZmoduleValue = moduleValue * ( maxSteps / static_cast<float>(stepsZ));
+    XmoduleValue = std::round(moduleValue * maxSteps / (stepsX));
+    YmoduleValue = std::round(moduleValue * maxSteps / (stepsY));
+    ZmoduleValue = std::round(moduleValue * maxSteps / (stepsZ));
+
+    // num_sync(XmoduleValue, YmoduleValue, ZmoduleValue, maxSteps);
+    int mod = 1 * moduleValue;
+
+    Serial.sendString("M " + std::to_string(mod) + "\n");
+    // Serial.sendString("Channel " + std::to_string(channelValue) + "\n");
+
+    delay_ms(100);
 
     motorX.moveTo(x, XmoduleValue, channelValue, stepsX);
     motorY.moveTo(y, YmoduleValue, channelValue, stepsY);
-    motorZ.moveTo(z, YmoduleValue, channelValue, stepsZ);
+    motorZ.moveTo(z, ZmoduleValue, channelValue, stepsZ);
+
+
+    Serial.sendString("S_X " + std::to_string(XmoduleValue) + "\n");
+    Serial.sendString("S_Y " + std::to_string(YmoduleValue) + "\n");
+    Serial.sendString("S_Z " + std::to_string(ZmoduleValue) + "\n");
+
+    // motorX.moveTo(x, XmoduleValue, channelValue, stepsX);
+    // motorY.moveTo(y, YmoduleValue, channelValue, stepsY);
+    // motorZ.moveTo(z, YmoduleValue, channelValue, stepsZ);
+
+    TPM0->MOD = XmoduleValue;
+    TPM1->MOD = YmoduleValue;
+    TPM2->MOD = ZmoduleValue;
+
 
     // Set the module and compare values for each TPM (Timer/Counter)
 

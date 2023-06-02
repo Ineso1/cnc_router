@@ -1,4 +1,5 @@
 #include "UartCom.h"
+#include <string>
 
 Uart::Uart(){}
 
@@ -36,6 +37,12 @@ void Uart::sendString(const char* str) {
     while (*str) {
         sendChar(*str);
         str++;
+    }
+}
+
+void Uart::sendString(std::string str) {
+    for(int i = 0; i < sizeof(str); i++){
+        sendChar(str[i]);
     }
 }
 

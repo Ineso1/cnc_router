@@ -2,6 +2,7 @@
 #define UARTCOM_H
 #include <stdint.h>
 #include <MKL25Z4.h>
+#include <string>
 #include "LcdDisp.h"
 
 
@@ -16,6 +17,7 @@ class Uart{
         void init();
         void sendChar(char c);
         void sendString(const char* str);
+        void sendString(std::string str);
         void intToHex(uint32_t value, char* buffer, int bufferSize);
         void intToBinary(uint32_t value, char* buffer, int bufferSize);
         void sendCommand(uint32_t command);

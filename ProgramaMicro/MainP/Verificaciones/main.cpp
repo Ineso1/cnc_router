@@ -21,17 +21,17 @@ void init(){
     SerialShit.init();
     Lcd.lcdInit();
     Pad.init();
-    Control.setPinX('C', 1, 'C', 2, 2000, 10, 0, 0, 1);
-    Control.setPinY('B', 1, 'B', 0, 2000, 10, 1, 1, 2);
-    Control.setPinZ('B', 3, 'B', 2, 2000, 10, 2, 1, 3);
+    Control.setPinX('C', 1, 'C', 2, 200, 10, 0, 0, 1);
+    Control.setPinY('B', 1, 'B', 0, 200, 10, 1, 1, 2);
+    Control.setPinZ('B', 3, 'B', 2, 200, 10, 2, 1, 3);
 }
 
 // main() runs in its own thread in the OS
 int main()
 {
     init();
-
-    Control.moveTo(10, 20, 5);
+    delay_ms(10000);
+    Control.moveTo(10, 60, 10);
     Control.motorX.enableTpm();
 
     char key;
@@ -76,12 +76,13 @@ extern "C" void TPM0_IRQHandler() {
 
         Control.motorX.addPulseCounter();
 
-        if (Control.motorX.getPulseTarget() <= Control.motorX.getPulseCounter()) {
+        if (Control.motorX.getPulseTarget() <= Control.motorX.getPulseCounter() - 2) {
                 Control.motorX.substractPulseCounter();
                 Control.motorX.setChValue(0);
         }
         else {
         PTB->PTOR = 0x80000; /* toggle green LED */
+        SerialShit.sendString("X " + std::to_string(Control.motorX.getPulseCounter()) + "\n");
             // delay_ms(1000);
         }
     }
@@ -95,12 +96,14 @@ extern "C" void TPM1_IRQHandler() {
 
         Control.motorY.addPulseCounter();
 
-        if (Control.motorY.getPulseTarget() <= Control.motorY.getPulseCounter()) {
+        if (Control.motorY.getPulseTarget() <= Control.motorY.getPulseCounter() - 2) {
             Control.motorY.substractPulseCounter();
             Control.motorY.setChValue(0);
         }
         else {
         PTB->PTOR = 0x40000; /* toggle red LED */
+        SerialShit.sendString("Y " + std::to_string(Control.motorY.getPulseCounter()) + "\n");
+
             // delay_ms(1000);
         }
     }
@@ -114,12 +117,15 @@ extern "C" void TPM2_IRQHandler() {
 
         Control.motorZ.addPulseCounter();
 
-        if (Control.motorZ.getPulseTarget() <= Control.motorZ.getPulseCounter()) {
+
+        if (Control.motorZ.getPulseTarget() <= Control.motorZ.getPulseCounter() - 2) {
             Control.motorZ.substractPulseCounter();
             Control.motorZ.setChValue(0);
         }
         else {
         PTD->PTOR = 0x02; /* toggle blue LED */
+        SerialShit.sendString("Z " + std::to_string(Control.motorZ.getPulseCounter()) + "\n");
+
             // delay_ms(1000);
         }
     }

@@ -70,7 +70,7 @@ void TpmMod::tpm2Config(){
 void TpmMod::init(int tpmNum, int channel){
     this->tpmNum = tpmNum;
     this->channel = channel;
-    SIM->SOPT2 |= 0x01000000;       //Enable TPM source
+    SIM->SOPT2 |= 0x02000000;       //Enable TPM source
     __disable_irq();
     switch (tpmNum) {
     case 0:
@@ -196,12 +196,15 @@ void TpmMod::enable(){
     edgeAlign();
     switch (tpmNum) {
         case 0:
+            TPM0->CNT = 0;
             TPM0->SC |= TPM_SC_CMOD(1);  // Enable TPM0 counter
             break;
         case 1:
+            TPM1->CNT = 0;
             TPM1->SC |= TPM_SC_CMOD(1);
             break;
         case 2:
+            TPM2->CNT = 0;
             TPM2->SC |= TPM_SC_CMOD(1);
             break;
         default:
