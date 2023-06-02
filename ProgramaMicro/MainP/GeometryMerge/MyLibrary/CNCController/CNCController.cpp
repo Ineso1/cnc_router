@@ -1,6 +1,7 @@
 #include "CNCController.h"
 #include <cstdint>
 #include <string>
+#include "Geometry.h"
 
 CNCController::CNCController() {
     // Initialize position variables
@@ -113,17 +114,10 @@ void CNCController::moveTo(float x, float y, float z){
 
     int mod = 1 * moduleValue;
 
-    Serial.sendString("M " + std::to_string(mod) + "\n");
 
     motorX.moveTo(x, XmoduleValue, channelValue, stepsX);
     motorY.moveTo(y, YmoduleValue, channelValue, stepsY);
     motorZ.moveTo(z, ZmoduleValue, channelValue, stepsZ);
-
-
-    Serial.sendString("S_X " + std::to_string(XmoduleValue) + "\n");
-    Serial.sendString("S_Y " + std::to_string(YmoduleValue) + "\n");
-    Serial.sendString("S_Z " + std::to_string(ZmoduleValue) + "\n");
-
 
     TPM0->MOD = XmoduleValue;
     TPM1->MOD = YmoduleValue;
@@ -140,6 +134,63 @@ void CNCController::moveTo(float x, float y, float z){
 
     while (!(motorX.tpmProcess() & motorY.tpmProcess() & motorZ.tpmProcess())) {}
 
+}
+
+void CNCController::moveArc(const Point& finalPoint, double radius, double spacing) {
+    // Create an arc using the provided parameters
+    Point currentPos(motorX.getPosition(), motorY.getPosition(), motorZ.getPosition());
+    Arc arc( currentPos, finalPoint, radius);
+
+    // Slice the arc into points
+    std::vector<Point> arcPoints = arc.sliceArc(spacing);
+
+    // // Move to each point in the arc
+    // for (const Point& point : arcPoints) {
+    //     moveTo(point.x(), point.y(), point.z());
+    // }
+}
+
+void CNCController::moveArc(const Point& finalPoint, const Point& center,  double spacing) {
+    // Create an arc using the provided parameters
+    Point currentPos(motorX.getPosition(), motorY.getPosition(), motorZ.getPosition());
+    Arc arc(currentPos, finalPoint, center);
+
+    // Slice the arc into points
+    std::vector<Point> arcPoints = arc.sliceArc(spacing);
+
+    // Move to each point in the arc
+    for (const Point& point : arcPoints) {
+        moveTo(point.x(), point.y(), point.z());
+    }
+}
+
+void CNCController::moveDiagonal(const Point& end) {
+    Point currentPos(motorX.getPosition(), motorY.getPosition(), motorZ.getPosition());
+
+    // Calculate the distance between the start and end points
+    double distanceX = end.x() - currentPos.x();
+    double distanceY = end.y() - currentPos.y();
+    double distanceZ = end.z() - currentPos.z();
+
+    // Determine the maximum distance among the axes
+    double maxDistance = std::abs(distanceX);
+    if (std::abs(distanceY) > maxDistance)
+        maxDistance = std::abs(distanceY);
+    if (std::abs(distanceZ) > maxDistance)
+        maxDistance = std::abs(distanceZ);
+
+    // Calculate the step sizes for each axis
+    double stepX = distanceX / maxDistance;
+    double stepY = distanceY / maxDistance;
+    double stepZ = distanceZ / maxDistance;
+
+    // Move the CNC in steps along the diagonal line
+    for (double i = 0; i <= maxDistance; i++) {
+        double x = currentPos.x() + stepX * i;
+        double y = currentPos.y() + stepY * i;
+        double z = currentPos.z() + stepZ * i;
+        moveTo(x, y, z);
+    }
 }
 
 /*---------------------------------------------------------------------------Pendientes---------------------------------------------------------------------------*/

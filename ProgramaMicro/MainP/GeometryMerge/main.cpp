@@ -3,18 +3,12 @@
 #include "KeyPad.h"
 #include "LcdDisp.h"
 #include "CNCController.h"
+#include "Point.h"
 
 KeyPad Pad;
 LcdDisp Lcd;
 Uart SerialShit;
 CNCController Control;
-
-
-void clearRgb(){
-    PTD->PDOR &= ~0x02; /* clr blue LED */
-    PTB->PDOR &= ~0x40000; /* clr red LED */
-    PTB->PDOR &= ~0x80000; /* clr green LED */
-}
 
 
 void init(){
@@ -30,21 +24,18 @@ void init(){
 int main()
 {
     init();
-    delay_ms(10000);
-    Control.moveTo(10, 60, 10);
-    Control.motorX.enableTpm();
 
     char key;
 
     while (true) {
-        clearRgb();
         key = Pad.getKey();
         while (!Pad.getKey()){}
         if(key == '0'){
             Lcd.lcdClear();
             SerialShit.sendChar(key);
             Lcd.lcdData(key);
-            Control.moveX(1);
+            Point pFinal(12,10,0);
+            Control.moveArc(pFinal, 10, 1);
         }
         if(key == '1'){
             Lcd.lcdClear();

@@ -5,6 +5,9 @@
 #include "Stepper.h"
 #include "math.h"
 #include "UartCom.h"
+#include "Arc.h"
+#include "Point.h"
+#include <vector>
 
 
 class CNCController{
@@ -48,6 +51,10 @@ class CNCController{
         void moveZ(float distance);
 
         void moveTo(float x, float y, float z);
+        void moveArc(const Point& finalPoint, const Point& center,  double spacing);
+        void moveArc(const Point& finalPoint, double radius, double spacing);
+        void moveDiagonal(const Point& end);
+
 
 
         /*....Pendientes............................................................*/
