@@ -144,10 +144,10 @@ void CNCController::moveArc(const Point& finalPoint, double radius, double spaci
     // Slice the arc into points
     std::vector<Point> arcPoints = arc.sliceArc(spacing);
 
-    // // Move to each point in the arc
-    // for (const Point& point : arcPoints) {
-    //     moveTo(point.x(), point.y(), point.z());
-    // }
+    // Move to each point in the arc
+    for (const Point& point : arcPoints) {
+        moveTo(point.x(), point.y(), point.z());
+    }
 }
 
 void CNCController::moveArc(const Point& finalPoint, const Point& center,  double spacing) {
